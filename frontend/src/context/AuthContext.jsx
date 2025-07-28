@@ -6,7 +6,8 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem('token'));
-  
+  const [loading, setLoading] = useState(true); // <-- NEW LOADING STATE
+
   const logout = useCallback(() => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
@@ -15,8 +16,8 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    if (token) {
-      try {
+    try {
+      if (token) {
         const decoded = jwt_decode(token);
         if (decoded.exp * 1000 < Date.now()) {
           logout();
@@ -24,10 +25,12 @@ export const AuthProvider = ({ children }) => {
           const userData = JSON.parse(localStorage.getItem('user'));
           setUser(userData);
         }
-      } catch (error) {
-        console.error("Invalid token:", error);
-        logout();
       }
+    } catch (error) {
+      console.error("Invalid token:", error);
+      logout();
+    } finally {
+      setLoading(false); // <-- SET LOADING TO FALSE AFTER CHECK
     }
   }, [token, logout]);
 
@@ -38,8 +41,9 @@ export const AuthProvider = ({ children }) => {
     setToken(authToken);
   };
 
+  // Expose the new loading state
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
