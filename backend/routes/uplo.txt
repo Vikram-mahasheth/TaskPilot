@@ -1,0 +1,49 @@
+import express from 'express';
+import multer from 'multer';
+import { protect } from '../middleware/authMiddleware.js';
+import Ticket from '../models/Ticket.js';
+
+const router = express.Router();
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        cb(null, `${Date.now()}-${file.originalname}`);
+    },
+});
+
+const upload = multer({ storage, limits: { fileSize: 1024 * 1024 * 5 } }); // 5MB limit
+
+router.post('/:ticketId/upload', protect, upload.single('attachment'), async (req, res, next) => {
+    try {
+        if (!req.file) {
+            const err = new Error('Please upload a file');
+            err.status = 400;
+            return next(err);
+        }
+
+        const ticket = await Ticket.findById(req.params.ticketId);
+        if (!ticket) {
+            const err = new Error('Ticket not found');
+            err.status = 404;
+            return next(err);
+        }
+        
+        const attachment = {
+            filename: req.file.filename,
+            path: req.file.path,
+            originalName: req.file.originalname,
+        };
+
+        ticket.attachments.push(attachment);
+        await ticket.save();
+        
+        res.status(200).json({ success: true, data: attachment });
+    } catch (error) {
+        next(error);
+    }
+});
+
+export default router;
