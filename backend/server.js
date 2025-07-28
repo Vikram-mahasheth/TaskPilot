@@ -29,7 +29,7 @@ const __dirname = path.dirname(__filename);
 
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://task-pilot-glk5.vercel.app' // Add your frontend's live URL here
+  'https://task-pilot-k8r6.vercel.app' // Add your frontend's live URL here
 ];
 
 app.use(cors({
