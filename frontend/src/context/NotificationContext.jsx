@@ -13,10 +13,10 @@ export const NotificationProvider = ({ children }) => {
     const { user } = useContext(AuthContext); // Get the user from AuthContext
     const api = useApi();
 
-    // Memoize the function to prevent re-renders
     const fetchNotifications = useCallback(async () => {
         // ** THE FIX IS HERE **
-        // Do not run if there is no user, or if the user is not an admin
+        // Do not run if there is no user, or if the user is not an admin.
+        // This prevents the race condition on login.
         if (!user || user.role !== 'admin') {
             setNotifications([]);
             setUnreadCount(0);
@@ -30,11 +30,11 @@ export const NotificationProvider = ({ children }) => {
         } catch (error) {
             console.error("Failed to fetch notifications:", error.message);
         }
-    }, [api, user]); // Add user as a dependency
+    }, [api, user]); // Add 'user' as a dependency
 
     useEffect(() => {
         fetchNotifications();
-        const interval = setInterval(fetchNotifications, 60000); // 1 minute
+        const interval = setInterval(fetchNotifications, 60000); // Poll every minute
         return () => clearInterval(interval);
     }, [fetchNotifications]);
     
