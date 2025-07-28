@@ -80,10 +80,10 @@ const AdminPage = () => {
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         {users.map((user) => (
                             <tr key={user._id}>
-                                <td className="px-6 py-4 whitespace-nowrap">{user.name}</td>
-                                <td className="px-6 py-4 whitespace-nowrap">{user.email}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">{user && user.name ? user.name : "Unknown"}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">{user && user.email ? user.email : "Unknown"}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                    <select value={user.role} onChange={(e) => handleRoleChange(user._id, e.target.value)} disabled={user._id === currentUser.id} className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white disabled:opacity-50">
+                                    <select value={user && user.role ? user.role : "user"} onChange={(e) => handleRoleChange(user._id, e.target.value)} disabled={user._id === currentUser.id} className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white disabled:opacity-50">
                                         <option value="user">User</option>
                                         <option value="admin">Admin</option>
                                     </select>
@@ -97,7 +97,7 @@ const AdminPage = () => {
                 </table>
             </div>
             <ConfirmModal isOpen={isConfirmOpen} onClose={closeDeleteConfirm} onConfirm={handleDeleteUser} title="Delete User">
-                <p>Are you sure you want to delete <strong>{userToDelete?.name}</strong>? This action is irreversible.</p>
+                <p>Are you sure you want to delete <strong>{userToDelete && userToDelete.name ? userToDelete.name : "Unknown"}</strong>? This action is irreversible.</p>
             </ConfirmModal>
         </div>
     );

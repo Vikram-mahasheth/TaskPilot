@@ -49,7 +49,7 @@ const DashboardPage = () => {
                     {stats?.recentTickets.map(ticket => (
                         <li key={ticket._id} className="border-b border-gray-200 dark:border-gray-700 pb-2">
                             <Link to={`/tickets/${ticket._id}`} className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">{ticket.title}</Link>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">By {ticket.createdBy.name}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">By {ticket.createdBy.name ? ticket.createdBy.name : "Guest"}</p>
                         </li>
                     ))}
                 </ul>
