@@ -50,8 +50,8 @@ const Header = () => {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center gap-2 text-xl font-bold">
-              <img src="/logo.svg" alt="Project Phoenix Logo" className="h-8 w-8" />
-              <span>Project Phoenix</span>
+              <img src="Screenshot 2025-07-28 at 10.43.16 AM.png" alt="Project Phoenix Logo" className="h-8 w-8" />
+              <span>Task Pilot</span>
             </Link>
           </div>
           <div className="flex items-center space-x-2 md:space-x-4">
