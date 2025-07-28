@@ -96,7 +96,7 @@ const Header = () => {
                   )}
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-gray-800 dark:text-gray-200 hidden sm:block"><UserIcon size={16} className="inline-block mr-1" /> {user.name}</span>
+                <span className="text-gray-800 dark:text-gray-200 hidden sm:block"><UserIcon size={16} className="inline-block mr-1" /> {user && user.name}</span>
                 <button onClick={handleLogout} className="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"><LogOut size={20} /></button>
               </div>
               </>
