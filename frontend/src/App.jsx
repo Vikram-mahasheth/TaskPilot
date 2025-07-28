@@ -1,9 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider, AuthContext } from './context/AuthContext'; // <-- IMPORT AuthContext
+import { AuthProvider, AuthContext } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { NotificationProvider } from './context/NotificationContext';
-import { useContext } from 'react'; // <-- IMPORT useContext
+import { useContext } from 'react';
 
 import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
@@ -17,11 +17,9 @@ import TicketDetailPage from './pages/TicketDetailPage';
 import DashboardPage from './pages/DashboardPage';
 import AdminPage from './pages/AdminPage';
 
-// This is the new main component that decides what to show
 function AppContent() {
   const { loading } = useContext(AuthContext);
 
-  // If the auth state is still loading, show a spinner and nothing else.
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
@@ -30,7 +28,6 @@ function AppContent() {
     );
   }
 
-  // Once loading is false, render the full application.
   return (
     <Router>
       <Layout>
@@ -46,7 +43,6 @@ function AppContent() {
     </Router>
   );
 }
-
 
 function App() {
   return (

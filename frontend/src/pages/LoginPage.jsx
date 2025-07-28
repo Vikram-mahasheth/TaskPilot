@@ -18,7 +18,12 @@ const LoginPage = () => {
             const data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
             login(data.user, data.token);
             toast.success('Logged in successfully!');
-            navigate('/');
+            // Redirect based on role
+            if (data.user.role === 'admin') {
+                navigate('/dashboard');
+            } else {
+                navigate('/');
+            }
         } catch (error) {
             toast.error(`Login failed: ${error.message}`);
         } finally {

@@ -6,7 +6,7 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem('token'));
-  const [loading, setLoading] = useState(true); // <-- NEW LOADING STATE
+  const [loading, setLoading] = useState(true);
 
   const logout = useCallback(() => {
     localStorage.removeItem('user');
@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
       console.error("Invalid token:", error);
       logout();
     } finally {
-      setLoading(false); // <-- SET LOADING TO FALSE AFTER CHECK
+      setLoading(false);
     }
   }, [token, logout]);
 
@@ -41,7 +41,6 @@ export const AuthProvider = ({ children }) => {
     setToken(authToken);
   };
 
-  // Expose the new loading state
   return (
     <AuthContext.Provider value={{ user, token, loading, login, logout }}>
       {children}

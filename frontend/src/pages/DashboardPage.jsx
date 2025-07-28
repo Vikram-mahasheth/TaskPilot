@@ -1,29 +1,35 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react'; // <-- Import useContext
 import useApi from '../hooks/useApi';
 import toast from 'react-hot-toast';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Ticket, Users, List, LayoutDashboard } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext'; // <-- Import AuthContext
 
 const DashboardPage = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const api = useApi();
+  const { user } = useContext(AuthContext); // <-- Use the user context
 
+  // ** THIS IS THE FIX **
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await api('/dashboard/stats');
-        setStats(response.data);
-      } catch (error) {
-        toast.error(`Failed to fetch dashboard stats: ${error.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStats();
-  }, [api]);
+    // Only fetch stats if the user is loaded
+    if (user) {
+        const fetchStats = async () => {
+            try {
+                const response = await api('/dashboard/stats');
+                setStats(response.data);
+            } catch (error) {
+                toast.error(`Failed to fetch dashboard stats: ${error.message}`);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchStats();
+    }
+  }, [api, user]); // Add user as a dependency
 
   if (loading) { return <LoadingSpinner />; }
 
@@ -49,7 +55,7 @@ const DashboardPage = () => {
                     {stats?.recentTickets.map(ticket => (
                         <li key={ticket._id} className="border-b border-gray-200 dark:border-gray-700 pb-2">
                             <Link to={`/tickets/${ticket._id}`} className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">{ticket.title}</Link>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">By {ticket.createdBy.name ? ticket.createdBy.name : "Guest"}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">By {ticket.createdBy.name}</p>
                         </li>
                     ))}
                 </ul>

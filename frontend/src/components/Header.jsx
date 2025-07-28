@@ -1,5 +1,3 @@
-// FILE: frontend/src/components/Header.jsx
-
 import { useContext, useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
@@ -19,7 +17,6 @@ const Header = () => {
   
   const ThemeIcon = theme === 'light' ? Moon : Sun;
 
-  // Safety check for click outside logic
   useEffect(() => {
     const handleClickOutside = (event) => {
         if (notificationRef.current && !notificationRef.current.contains(event.target)) {
@@ -50,8 +47,8 @@ const Header = () => {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center gap-2 text-xl font-bold">
-              <img src="Screenshot 2025-07-28 at 10.43.16 AM.png" alt="Project Phoenix Logo" className="h-8 w-8" />
-              <span>Task Pilot</span>
+              <img src="/logo.svg" alt="Project Phoenix Logo" className="h-8 w-8" />
+              <span>Project Phoenix</span>
             </Link>
           </div>
           <div className="flex items-center space-x-2 md:space-x-4">
@@ -73,7 +70,6 @@ const Header = () => {
             
             {user ? (
               <>
-              {/* Only render notifications if user is an admin */}
               {user.role === 'admin' && (
                 <div className="relative" ref={notificationRef}>
                     <button onClick={() => setIsNotificationsOpen(prev => !prev)} className="relative p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">
@@ -89,7 +85,7 @@ const Header = () => {
                                 {unreadCount > 0 && <button onClick={markAllAsRead} className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">Mark all as read</button>}
                             </div>
                             <ul className="divide-y divide-gray-200 dark:divide-gray-700 max-h-96 overflow-y-auto">
-                                {notifications && notifications.length > 0 ? notifications.map(n => (
+                                {notifications.length > 0 ? notifications.map(n => (
                                     <li key={n._id} onClick={() => handleNotificationClick(n)} className={`px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer ${!n.read ? 'bg-indigo-50 dark:bg-indigo-900/50' : ''}`}>
                                         <p className="text-sm">{n.message}</p>
                                         <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(n.createdAt).toLocaleString()}</p>
@@ -101,8 +97,7 @@ const Header = () => {
                 </div>
               )}
               <div className="flex items-center space-x-2">
-                {/* THE CRITICAL FIX IS HERE */}
-                <span className="text-gray-800 dark:text-gray-200 hidden sm:block"><UserIcon size={16} className="inline-block mr-1" /> {user && user.name ? user.name : "Guest"}</span>
+                <span className="text-gray-800 dark:text-gray-200 hidden sm:block"><UserIcon size={16} className="inline-block mr-1" /> {user && user.name}</span>
                 <button onClick={handleLogout} className="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"><LogOut size={20} /></button>
               </div>
               </>

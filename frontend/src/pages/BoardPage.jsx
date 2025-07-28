@@ -28,7 +28,7 @@ const BoardPage = () => {
     const [users, setUsers] = useState([]);
     const debouncedSearchTerm = useDebounce(filters.q, 500);
     const api = useApi();
-    const { user } = useContext(AuthContext);
+    const { user } = useContext(AuthContext); // <-- Use the user context
 
     const fetchTickets = useCallback(async () => {
         setLoading(true);
@@ -45,10 +45,17 @@ const BoardPage = () => {
         }
     }, [api, debouncedSearchTerm, filters]);
 
-    useEffect(() => { fetchTickets(); }, [fetchTickets]);
+    // ** THIS IS THE FIX **
+    useEffect(() => {
+        // Only fetch tickets if the user is loaded
+        if (user) {
+            fetchTickets();
+        }
+    }, [fetchTickets, user]);
     
     useEffect(() => {
-      if (user.role === 'admin') {
+      // Only fetch users if the user is loaded and is an admin
+      if (user && user.role === 'admin') {
         const fetchUsers = async () => {
           try {
             const res = await api('/users');
@@ -57,7 +64,7 @@ const BoardPage = () => {
         };
         fetchUsers();
       }
-    }, [api, user.role]);
+    }, [api, user]);
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
@@ -102,7 +109,7 @@ const BoardPage = () => {
                     </div>
                     <select name="status" value={filters.status} onChange={handleFilterChange} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"><option value="">All Statuses</option><option>Open</option><option>In Progress</option><option>Resolved</option></select>
                     <select name="priority" value={filters.priority} onChange={handleFilterChange} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"><option value="">All Priorities</option><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select>
-                     {user.role === 'admin' && <select name="assignee" value={filters.assignee} onChange={handleFilterChange} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"><option value="">All Assignees</option><option value="unassigned">Unassigned</option>{users.map(u => <option key={u._id} value={u._id}>{u && u.name ? u.name : "Unknown"}</option>)}</select>}
+                     {user && user.role === 'admin' && <select name="assignee" value={filters.assignee} onChange={handleFilterChange} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"><option value="">All Assignees</option><option value="unassigned">Unassigned</option>{users.map(u => <option key={u._id} value={u._id}>{u.name}</option>)}</select>}
                 </div>
             </div>
 
@@ -122,7 +129,7 @@ const BoardPage = () => {
                                                         <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className="group p-4 bg-white dark:bg-gray-700 rounded-lg shadow">
                                                             <Link to={`/tickets/${ticket._id}`}>
                                                                 <div className="flex items-center gap-2 mb-1"><PriorityIndicator priority={ticket.priority} /><h3 className="font-bold flex-1">{ticket.title}</h3></div>
-                                                                <p className="text-sm text-gray-600 dark:text-gray-400">{ticket.assignee ? `To: ${ticket.assignee && ticket.assignee.name ? ticket.assignee.name : "Unknown"}` : `By: ${ticket.createdBy && ticket.createdBy.name ? ticket.createdBy.name : "Unknown"}`}</p>
+                                                                <p className="text-sm text-gray-600 dark:text-gray-400">{ticket.assignee ? `To: ${ticket.assignee.name}` : `By: ${ticket.createdBy.name}`}</p>
                                                             </Link>
                                                         </div>
                                                     )}
