@@ -41,6 +41,8 @@ app.use(cors({
     }
   }
 }));
+app.use(express.json()); // <-- ADD THIS LINE
+app.use(express.urlencoded({ extended: true }));
 
 // --- API ROUTES ---
 app.use('/api/auth', authRoutes);
