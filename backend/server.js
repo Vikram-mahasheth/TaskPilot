@@ -27,11 +27,20 @@ const __dirname = path.dirname(__filename);
 
 // --- MIDDLEWARE ---
 
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://task-pilot-rouge.vercel.app' // Add your frontend's live URL here
+];
+
 app.use(cors({
-  origin: 'http://localhost:3000' // Change this from 5173 to 3000
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // --- API ROUTES ---
 app.use('/api/auth', authRoutes);
