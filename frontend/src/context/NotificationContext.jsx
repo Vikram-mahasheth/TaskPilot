@@ -12,15 +12,19 @@ export const NotificationProvider = ({ children }) => {
     const api = useApi();
 
     const fetchNotifications = useCallback(async () => {
+        // This check prevents a race condition on admin login
         if (!user || user.role !== 'admin') {
             setNotifications([]);
             setUnreadCount(0);
             return;
         }
+
         try {
-            const res = await api('/notifications');
-            setNotifications(res.data);
-            setUnreadCount(res.data.filter(n => !n.read).length);
+            const res = await api.get('/notifications');
+            if (res.success) {
+                setNotifications(res.data);
+                setUnreadCount(res.data.filter(n => !n.read).length);
+            }
         } catch (error) {
             console.error("Failed to fetch notifications:", error.message);
         }
@@ -28,13 +32,13 @@ export const NotificationProvider = ({ children }) => {
 
     useEffect(() => {
         fetchNotifications();
-        const interval = setInterval(fetchNotifications, 60000);
+        const interval = setInterval(fetchNotifications, 60000); // Poll every minute
         return () => clearInterval(interval);
     }, [fetchNotifications]);
     
     const markAsRead = async (notificationId) => {
         try {
-            await api(`/notifications/${notificationId}/read`, { method: 'PUT' });
+            await api.put(`/notifications/${notificationId}/read`);
             setNotifications(prev => prev.map(n => n._id === notificationId ? {...n, read: true} : n));
             setUnreadCount(prev => Math.max(0, prev - 1));
         } catch (error) {
@@ -44,7 +48,7 @@ export const NotificationProvider = ({ children }) => {
     
     const markAllAsRead = async () => {
         try {
-            await api(`/notifications/read-all`, { method: 'POST' });
+            await api.post(`/notifications/read-all`);
             setNotifications(prev => prev.map(n => ({...n, read: true})));
             setUnreadCount(0);
         } catch (error) {

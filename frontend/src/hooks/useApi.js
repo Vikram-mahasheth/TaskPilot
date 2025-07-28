@@ -1,34 +1,62 @@
 import { useContext, useCallback } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const useApi = () => {
   const { token, logout } = useContext(AuthContext);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+  const baseURL = import.meta.env.VITE_API_URL;
 
-  const apiFetch = useCallback(async (url, options = {}) => {
-    const headers = { ...options.headers };
-    if (token) { headers['Authorization'] = `Bearer ${token}`; }
-    if (!(options.body instanceof FormData)) { headers['Content-Type'] = 'application/json'; }
+  const apiCall = useCallback(
+    async (endpoint, options = {}) => {
+      const { body, ...customConfig } = options;
+      const headers = { 'Content-Type': 'application/json' };
 
-    const response = await fetch(`${API_URL}${url}`, { ...options, headers });
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
 
-    if (response.status === 401) {
-      logout();
-      throw new Error('Unauthorized');
-    }
-    
-    const contentType = response.headers.get("content-type");
-    if (contentType && contentType.includes("application/json")) {
+      const config = {
+        method: body ? 'POST' : 'GET',
+        ...customConfig,
+        headers: {
+          ...headers,
+          ...customConfig.headers,
+        },
+      };
+
+      if (body) {
+        config.body = JSON.stringify(body);
+      }
+
+      try {
+        const response = await fetch(`${baseURL}${endpoint}`, config);
         const data = await response.json();
-        if (!response.ok) { throw new Error(data.error || 'Something went wrong'); }
-        return data;
-    } else {
-        if (!response.ok) { const text = await response.text(); throw new Error(text || 'Something went wrong'); }
-        return response;
-    }
-  }, [token, logout, API_URL]);
+        
+        if (!response.ok) {
+            if (response.status === 401) {
+                logout();
+                toast.error("Session expired. Please log in again.");
+            }
+            throw new Error(data.error || 'An API error occurred');
+        }
 
-  return apiFetch;
+        return data;
+
+      } catch (error) {
+        console.error('API call failed:', error);
+        throw error;
+      }
+    },
+    [token, logout, baseURL]
+  );
+  
+  // Add convenience methods
+  return {
+    get: (endpoint, options) => apiCall(endpoint, { ...options, method: 'GET' }),
+    post: (endpoint, body, options) => apiCall(endpoint, { ...options, method: 'POST', body }),
+    put: (endpoint, body, options) => apiCall(endpoint, { ...options, method: 'PUT', body }),
+    delete: (endpoint, options) => apiCall(endpoint, { ...options, method: 'DELETE' }),
+  };
 };
 
 export default useApi;

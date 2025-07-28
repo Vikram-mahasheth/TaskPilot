@@ -6,7 +6,7 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem('token'));
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // This state tracks the initial auth check
 
   const logout = useCallback(() => {
     localStorage.removeItem('user');
@@ -19,6 +19,7 @@ export const AuthProvider = ({ children }) => {
     try {
       if (token) {
         const decoded = jwt_decode(token);
+        // Check if token is expired
         if (decoded.exp * 1000 < Date.now()) {
           logout();
         } else {
@@ -30,6 +31,7 @@ export const AuthProvider = ({ children }) => {
       console.error("Invalid token:", error);
       logout();
     } finally {
+      // Once the check is done (token exists or not), set loading to false
       setLoading(false);
     }
   }, [token, logout]);

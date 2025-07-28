@@ -17,9 +17,12 @@ import TicketDetailPage from './pages/TicketDetailPage';
 import DashboardPage from './pages/DashboardPage';
 import AdminPage from './pages/AdminPage';
 
+// This new component decides what to show based on the loading state
 function AppContent() {
   const { loading } = useContext(AuthContext);
 
+  // If the initial auth check is still running, show a full-page spinner.
+  // This is the definitive fix for the blank screen crash on startup.
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
@@ -28,6 +31,7 @@ function AppContent() {
     );
   }
 
+  // Once the check is complete, render the actual application.
   return (
     <Router>
       <Layout>
@@ -44,6 +48,7 @@ function AppContent() {
   );
 }
 
+// The main App component wraps the providers around the new AppContent
 function App() {
   return (
     <ThemeProvider>

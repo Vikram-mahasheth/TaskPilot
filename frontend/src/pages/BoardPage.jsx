@@ -1,150 +1,204 @@
-import { useState, useEffect, useCallback, useContext } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import useApi from '../hooks/useApi';
+import SkeletonLoader from '../components/SkeletonLoader';
+import { Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { PlusCircle, Search } from 'lucide-react';
-import { SkeletonColumn } from '../components/SkeletonLoader';
-import { AuthContext } from '../context/AuthContext';
-
-const useDebounce = (value, delay) => {
-    const [debouncedValue, setDebouncedValue] = useState(value);
-    useEffect(() => {
-        const handler = setTimeout(() => { setDebouncedValue(value); }, delay);
-        return () => { clearTimeout(handler); };
-    }, [value, delay]);
-    return debouncedValue;
-};
-
-const PriorityIndicator = ({ priority }) => {
-    const config = { 'Critical': 'bg-red-500', 'High': 'bg-orange-500', 'Medium': 'bg-yellow-500', 'Low': 'bg-green-500' };
-    return <span className={`w-3 h-3 rounded-full ${config[priority] || 'bg-gray-400'}`} title={`Priority: ${priority}`}></span>;
-};
 
 const BoardPage = () => {
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filters, setFilters] = useState({ q: '', status: '', priority: '', type: '', assignee: '' });
-    const [users, setUsers] = useState([]);
-    const debouncedSearchTerm = useDebounce(filters.q, 500);
+    const [columns, setColumns] = useState({});
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [newTicketData, setNewTicketData] = useState({ title: '', description: '' });
     const api = useApi();
-    const { user } = useContext(AuthContext); // <-- Use the user context
+    const navigate = useNavigate();
 
-    const fetchTickets = useCallback(async () => {
-        setLoading(true);
-        try {
-            const params = new URLSearchParams();
-            if (debouncedSearchTerm) params.append('q', debouncedSearchTerm);
-            Object.keys(filters).forEach(key => { if (key !== 'q' && filters[key]) params.append(key, filters[key]); });
-            const res = await api(`/tickets?${params.toString()}`);
-            setTickets(res.data);
-        } catch (error) {
-            toast.error(`Failed to fetch tickets: ${error.message}`);
-        } finally {
-            setLoading(false);
-        }
-    }, [api, debouncedSearchTerm, filters]);
-
-    // ** THIS IS THE FIX **
     useEffect(() => {
-        // Only fetch tickets if the user is loaded
-        if (user) {
-            fetchTickets();
-        }
-    }, [fetchTickets, user]);
-    
-    useEffect(() => {
-      // Only fetch users if the user is loaded and is an admin
-      if (user && user.role === 'admin') {
-        const fetchUsers = async () => {
-          try {
-            const res = await api('/users');
-            setUsers(res.data);
-          } catch (error) { toast.error('Could not fetch users for filter.'); }
+        const fetchTickets = async () => {
+            try {
+                const res = await api.get('/tickets');
+                if (res.success) {
+                    setTickets(res.data);
+                    // Organize tickets into columns
+                    const newColumns = {
+                        'Open': { id: 'Open', title: 'To Do', ticketIds: [] },
+                        'In Progress': { id: 'In Progress', title: 'In Progress', ticketIds: [] },
+                        'Resolved': { id: 'Resolved', title: 'Done', ticketIds: [] },
+                    };
+                    res.data.forEach(ticket => {
+                        if(newColumns[ticket.status]) {
+                            newColumns[ticket.status].ticketIds.push(ticket._id);
+                        }
+                    });
+                    setColumns(newColumns);
+                }
+            } catch (error) {
+                toast.error("Failed to fetch tickets.");
+            } finally {
+                setLoading(false);
+            }
         };
-        fetchUsers();
-      }
-    }, [api, user]);
-
-    const handleFilterChange = (e) => {
-        const { name, value } = e.target;
-        setFilters(prev => ({...prev, [name]: value}));
-    };
+        fetchTickets();
+    }, [api]);
 
     const onDragEnd = async (result) => {
         const { destination, source, draggableId } = result;
-        if (!destination || (destination.droppableId === source.droppableId && destination.index === source.index)) return;
-        
-        const newStatus = destination.droppableId;
-        const originalTickets = [...tickets];
-        setTickets(prev => prev.map(t => t._id === draggableId ? { ...t, status: newStatus } : t));
 
+        if (!destination) return;
+        if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+        const start = columns[source.droppableId];
+        const finish = columns[destination.droppableId];
+
+        if (start === finish) {
+            // Reordering in the same column
+            const newTicketIds = Array.from(start.ticketIds);
+            newTicketIds.splice(source.index, 1);
+            newTicketIds.splice(destination.index, 0, draggableId);
+
+            const newColumn = { ...start, ticketIds: newTicketIds };
+            setColumns({ ...columns, [newColumn.id]: newColumn });
+            return;
+        }
+
+        // Moving from one list to another
+        const startTicketIds = Array.from(start.ticketIds);
+        startTicketIds.splice(source.index, 1);
+        const newStart = { ...start, ticketIds: startTicketIds };
+
+        const finishTicketIds = Array.from(finish.ticketIds);
+        finishTicketIds.splice(destination.index, 0, draggableId);
+        const newFinish = { ...finish, ticketIds: finishTicketIds };
+
+        setColumns({ ...columns, [newStart.id]: newStart, [newFinish.id]: newFinish });
+
+        // API call to update ticket status
         try {
-            await api(`/tickets/${draggableId}`, { method: 'PUT', body: JSON.stringify({ status: newStatus }) });
-            toast.success(`Ticket moved to "${newStatus}"`);
+            await api.put(`/tickets/${draggableId}`, { status: finish.id });
+            toast.success("Ticket status updated.");
         } catch (error) {
-            setTickets(originalTickets);
-            toast.error(`Failed to move ticket: ${error.message}`);
+            // Revert UI on failure
+            setColumns({ ...columns, [start.id]: start, [finish.id]: finish });
+            toast.error("Failed to update ticket status.");
         }
     };
-    
-    const columns = {
-        'Open': tickets.filter(t => t.status === 'Open'),
-        'In Progress': tickets.filter(t => t.status === 'In Progress'),
-        'Resolved': tickets.filter(t => t.status === 'Resolved'),
-    };
-    
-    return (
-        <div>
-            <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
-                <h1 className="text-3xl font-bold">Ticket Board</h1>
-                <Link to="/tickets/new" className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"><PlusCircle size={20} /> New Ticket</Link>
-            </div>
-            
-            <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <div className="relative col-span-1 lg:col-span-2">
-                        <input type="text" name="q" placeholder="Search..." value={filters.q} onChange={handleFilterChange} className="w-full p-2 pl-10 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                    </div>
-                    <select name="status" value={filters.status} onChange={handleFilterChange} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"><option value="">All Statuses</option><option>Open</option><option>In Progress</option><option>Resolved</option></select>
-                    <select name="priority" value={filters.priority} onChange={handleFilterChange} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"><option value="">All Priorities</option><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select>
-                     {user && user.role === 'admin' && <select name="assignee" value={filters.assignee} onChange={handleFilterChange} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"><option value="">All Assignees</option><option value="unassigned">Unassigned</option>{users.map(u => <option key={u._id} value={u._id}>{u.name}</option>)}</select>}
-                </div>
-            </div>
 
-            {loading ? ( <div className="flex flex-col md:flex-row gap-4"><SkeletonColumn /><SkeletonColumn /><SkeletonColumn /></div> ) 
-            : (
-                <DragDropContext onDragEnd={onDragEnd}>
-                    <div className="flex flex-col md:flex-row gap-4">
-                        {Object.entries(columns).map(([columnId, columnTickets]) => (
-                            <Droppable droppableId={columnId} key={columnId}>
+    const handleCreateTicket = async (e) => {
+        e.preventDefault();
+        if (!newTicketData.title) {
+            return toast.error("Title is required.");
+        }
+        try {
+            const res = await api.post('/tickets', newTicketData);
+            if (res.success) {
+                toast.success("Ticket created!");
+                // Add to UI
+                setTickets([...tickets, res.data]);
+                const newColumns = { ...columns };
+                newColumns['Open'].ticketIds.push(res.data._id);
+                setColumns(newColumns);
+                setIsModalOpen(false);
+                setNewTicketData({ title: '', description: '' });
+            }
+        } catch (error) {
+            toast.error("Failed to create ticket.");
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <SkeletonLoader count={2} />
+                <SkeletonLoader count={3} />
+                <SkeletonLoader count={1} />
+            </div>
+        );
+    }
+
+    return (
+        <>
+            <div className="flex justify-between items-center mb-4">
+                <h1 className="text-2xl font-bold">Ticket Board</h1>
+                <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+                    <Plus size={18} /> New Ticket
+                </button>
+            </div>
+            <DragDropContext onDragEnd={onDragEnd}>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    {Object.values(columns).map(column => (
+                        <div key={column.id} className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
+                            <h2 className="font-bold text-lg mb-4 text-center">{column.title}</h2>
+                            <Droppable droppableId={column.id}>
                                 {(provided, snapshot) => (
-                                    <div ref={provided.innerRef} {...provided.droppableProps} className={`bg-gray-200 dark:bg-gray-800 rounded-lg p-4 w-full md:w-1/3 ${snapshot.isDraggingOver ? 'bg-indigo-100 dark:bg-indigo-900' : ''}`}>
-                                        <h2 className="text-xl font-semibold mb-4">{columnId} ({columnTickets.length})</h2>
-                                        <div className="space-y-2 min-h-[400px]">
-                                            {columnTickets.map((ticket, index) => (
+                                    <div
+                                        ref={provided.innerRef}
+                                        {...provided.droppableProps}
+                                        className={`min-h-[200px] transition-colors duration-200 rounded-lg p-2 ${snapshot.isDraggingOver ? 'bg-indigo-100 dark:bg-indigo-900/50' : ''}`}
+                                    >
+                                        {column.ticketIds.map((ticketId, index) => {
+                                            const ticket = tickets.find(t => t._id === ticketId);
+                                            if (!ticket) return null; // Safety check
+                                            return (
                                                 <Draggable key={ticket._id} draggableId={ticket._id} index={index}>
-                                                    {(provided) => (
-                                                        <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className="group p-4 bg-white dark:bg-gray-700 rounded-lg shadow">
-                                                            <Link to={`/tickets/${ticket._id}`}>
-                                                                <div className="flex items-center gap-2 mb-1"><PriorityIndicator priority={ticket.priority} /><h3 className="font-bold flex-1">{ticket.title}</h3></div>
-                                                                <p className="text-sm text-gray-600 dark:text-gray-400">{ticket.assignee ? `To: ${ticket.assignee.name}` : `By: ${ticket.createdBy.name}`}</p>
-                                                            </Link>
+                                                    {(provided, snapshot) => (
+                                                        <div
+                                                            ref={provided.innerRef}
+                                                            {...provided.draggableProps}
+                                                            {...provided.dragHandleProps}
+                                                            onClick={() => navigate(`/tickets/${ticket._id}`)}
+                                                            className={`bg-white dark:bg-gray-700 p-4 mb-3 rounded-lg shadow cursor-pointer hover:shadow-lg ${snapshot.isDragging ? 'shadow-xl' : ''}`}
+                                                        >
+                                                            <h3 className="font-semibold">{ticket.title}</h3>
                                                         </div>
                                                     )}
                                                 </Draggable>
-                                            ))}
-                                            {provided.placeholder}
-                                        </div>
+                                            );
+                                        })}
+                                        {provided.placeholder}
                                     </div>
                                 )}
                             </Droppable>
-                        ))}
+                        </div>
+                    ))}
+                </div>
+            </DragDropContext>
+
+            {/* New Ticket Modal */}
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
+                        <h2 className="text-2xl font-bold mb-4">Create New Ticket</h2>
+                        <form onSubmit={handleCreateTicket}>
+                            <div className="mb-4">
+                                <label htmlFor="title" className="block text-sm font-medium mb-1">Title</label>
+                                <input
+                                    type="text"
+                                    id="title"
+                                    value={newTicketData.title}
+                                    onChange={(e) => setNewTicketData({ ...newTicketData, title: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"
+                                />
+                            </div>
+                            <div className="mb-4">
+                                <label htmlFor="description" className="block text-sm font-medium mb-1">Description</label>
+                                <textarea
+                                    id="description"
+                                    rows="4"
+                                    value={newTicketData.description}
+                                    onChange={(e) => setNewTicketData({ ...newTicketData, description: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"
+                                />
+                            </div>
+                            <div className="flex justify-end gap-4">
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200">Cancel</button>
+                                <button type="submit" className="px-4 py-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Create</button>
+                            </div>
+                        </form>
                     </div>
-                </DragDropContext>
+                </div>
             )}
-        </div>
+        </>
     );
 };
-export default BoardPage;

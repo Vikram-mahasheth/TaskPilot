@@ -1,67 +1,91 @@
-import { useState, useEffect, useContext } from 'react'; // <-- Import useContext
+import { useEffect, useState } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import useApi from '../hooks/useApi';
 import toast from 'react-hot-toast';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import LoadingSpinner from '../components/LoadingSpinner';
-import { Ticket, Users, List, LayoutDashboard } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext'; // <-- Import AuthContext
+import SkeletonLoader from '../components/SkeletonLoader';
 
 const DashboardPage = () => {
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const api = useApi();
-  const { user } = useContext(AuthContext); // <-- Use the user context
+    const [stats, setStats] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const api = useApi();
 
-  // ** THIS IS THE FIX **
-  useEffect(() => {
-    // Only fetch stats if the user is loaded
-    if (user) {
+    useEffect(() => {
         const fetchStats = async () => {
             try {
-                const response = await api('/dashboard/stats');
-                setStats(response.data);
+                const res = await api.get('/dashboard/stats');
+                if (res.success) {
+                    setStats(res.data);
+                }
             } catch (error) {
-                toast.error(`Failed to fetch dashboard stats: ${error.message}`);
+                toast.error("Failed to load dashboard data.");
             } finally {
                 setLoading(false);
             }
         };
         fetchStats();
+    }, [api]);
+
+    if (loading || !stats) {
+        // More comprehensive skeleton loader for the dashboard
+        return (
+            <div className="animate-pulse">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                    <div className="h-24 bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
+                    <div className="h-24 bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
+                </div>
+                <div className="h-96 bg-gray-300 dark:bg-gray-700 rounded-lg mb-6"></div>
+                <div className="h-64 bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
+            </div>
+        );
     }
-  }, [api, user]); // Add user as a dependency
+    
+    // Safety check for ticketsByStatus
+    const chartData = stats.ticketsByStatus ? stats.ticketsByStatus.map(item => ({ name: item._id, count: item.count })) : [];
 
-  if (loading) { return <LoadingSpinner />; }
+    return (
+        <div className="space-y-6">
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                    <h3 className="text-lg font-medium text-gray-500 dark:text-gray-400">Total Tickets</h3>
+                    <p className="text-4xl font-bold">{stats.totalTickets || 0}</p>
+                </div>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                    <h3 className="text-lg font-medium text-gray-500 dark:text-gray-400">Total Users</h3>
+                    <p className="text-4xl font-bold">{stats.totalUsers || 0}</p>
+                </div>
+            </div>
 
-  const chartData = stats?.ticketsByStatus.map(item => ({ name: item._id, count: item.count }));
-
-  return (
-    <div>
-        <h1 className="text-3xl font-bold mb-6 flex items-center gap-2"><LayoutDashboard size={32}/> Dashboard</h1>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md flex items-center gap-4"><div className="p-3 bg-indigo-100 dark:bg-indigo-900 rounded-full"><Ticket className="text-indigo-500" size={24} /></div><div><p className="text-sm text-gray-500 dark:text-gray-400">Total Tickets</p><p className="text-2xl font-bold">{stats?.totalTickets}</p></div></div>
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md flex items-center gap-4"><div className="p-3 bg-green-100 dark:bg-green-900 rounded-full"><Users className="text-green-500" size={24} /></div><div><p className="text-sm text-gray-500 dark:text-gray-400">Total Users</p><p className="text-2xl font-bold">{stats?.totalUsers}</p></div></div>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                <h2 className="text-xl font-semibold mb-4">Tickets by Status</h2>
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                <h3 className="text-xl font-bold mb-4">Tickets by Status</h3>
                 <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" /><XAxis dataKey="name" className="text-xs" /><YAxis allowDecimals={false} className="text-xs" /><Tooltip contentStyle={{ backgroundColor: 'rgba(31, 41, 55, 0.8)', color: '#fff', borderRadius: '0.5rem' }} /><Legend /><Bar dataKey="count" fill="#6366f1" /></BarChart>
+                    <BarChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip contentStyle={{ backgroundColor: '#374151', border: 'none' }} />
+                        <Legend />
+                        <Bar dataKey="count" fill="#4f46e5" />
+                    </BarChart>
                 </ResponsiveContainer>
             </div>
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2"><List /> Recent Tickets</h2>
-                <ul className="space-y-4">
-                    {stats?.recentTickets.map(ticket => (
-                        <li key={ticket._id} className="border-b border-gray-200 dark:border-gray-700 pb-2">
-                            <Link to={`/tickets/${ticket._id}`} className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">{ticket.title}</Link>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">By {ticket.createdBy.name}</p>
-                        </li>
-                    ))}
+            
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                <h3 className="text-xl font-bold mb-4">Recent Tickets</h3>
+                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {stats.recentTickets && stats.recentTickets.length > 0 ? (
+                        stats.recentTickets.map(ticket => (
+                            <li key={ticket._id} className="py-3">
+                                <p className="font-semibold">{ticket.title}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Created by {ticket.createdBy?.name || 'Unknown'}</p>
+                            </li>
+                        ))
+                    ) : <p className="text-gray-500">No recent tickets.</p>}
                 </ul>
             </div>
         </div>
-    </div>
-  );
+    );
 };
+
 export default DashboardPage;
