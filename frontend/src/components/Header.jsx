@@ -1,4 +1,6 @@
-import { useContext, useState, useEffect, useRef } from 'react';
+
+              
+            import { useContext, useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
@@ -47,7 +49,7 @@ const Header = () => {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center gap-2 text-xl font-bold">
-              <img src="Screenshot 2025-07-28 at 10.43.16 AM.png" alt="Project Phoenix Logo" className="h-8 w-8" />
+              <img src="Screenshot 2025-07-28 at 10.43.16 AM.png" alt="Task Pilot Logo" className="h-8 w-8" />
               <span>Task Pilot</span>
             </Link>
           </div>

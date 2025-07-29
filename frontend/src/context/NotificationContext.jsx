@@ -1,6 +1,3 @@
-
-
-// --- FILE: frontend/src/context/NotificationContext.jsx ---
 import { createContext, useState, useEffect, useCallback, useContext } from 'react';
 import useApi from '../hooks/useApi';
 import { AuthContext } from './AuthContext';

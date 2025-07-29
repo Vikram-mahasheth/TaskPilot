@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useContext, useCallback, memo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import useApi from '../hooks/useApi';

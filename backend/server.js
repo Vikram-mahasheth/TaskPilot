@@ -15,7 +15,6 @@ import dashboardRoutes from './routes/dashboard.js';
 import userRoutes from './routes/users.js';
 import notificationRoutes from './routes/notifications.js';
 
-// --- INITIALIZATION ---
 dotenv.config();
 connectDB();
 
@@ -25,12 +24,11 @@ const PORT = process.env.PORT || 5001;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// --- MIDDLEWARE ---
-
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://task-pilot-eight.vercel.app' // Add your frontend's live URL here
-];
+  'http://localhost:5173',
+  process.env.FRONTEND_URL 
+].filter(Boolean);
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -41,31 +39,26 @@ app.use(cors({
     }
   }
 }));
-app.use(express.json()); // <-- ADD THIS LINE
+
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// --- API ROUTES ---
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/notifications', notificationRoutes);
-
 app.use('/api/tickets/:ticketId/comments', commentRoutes);
 app.use('/api/tickets', ticketRoutes);
 
-// --- STATIC ASSETS ---
 app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 
-// --- HEALTH CHECK ---
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'Server is healthy and running' });
 });
 
-// --- ERROR HANDLING ---
 app.use(notFound);
 app.use(errorHandler);
 
-// --- START SERVER ---
 app.listen(PORT, () => {
     logger.info(`🚀 Project Phoenix server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });

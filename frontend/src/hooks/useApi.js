@@ -1,4 +1,4 @@
-import { useContext, useCallback } from 'react';
+import { useContext, useCallback, useMemo } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -43,13 +43,14 @@ const useApi = () => {
     }
   }, [token, logout, navigate, baseURL]);
   
-  // Convenience methods
-  const get = useCallback((endpoint, options) => request(endpoint, { ...options, method: 'GET' }), [request]);
-  const post = useCallback((endpoint, body, options) => request(endpoint, { ...options, method: 'POST', body: JSON.stringify(body) }), [request]);
-  const put = useCallback((endpoint, body, options) => request(endpoint, { ...options, method: 'PUT', body: JSON.stringify(body) }), [request]);
-  const del = useCallback((endpoint, options) => request(endpoint, { ...options, method: 'DELETE' }), [request]);
-
-  return { get, post, put, delete: del, request };
+  // Memoize the returned object to prevent re-renders
+  return useMemo(() => ({
+      get: (endpoint, options) => request(endpoint, { ...options, method: 'GET' }),
+      post: (endpoint, body, options) => request(endpoint, { ...options, method: 'POST', body: JSON.stringify(body) }),
+      put: (endpoint, body, options) => request(endpoint, { ...options, method: 'PUT', body: JSON.stringify(body) }),
+      delete: (endpoint, options) => request(endpoint, { ...options, method: 'DELETE' }),
+      request
+  }), [request]);
 };
 
 export default useApi;

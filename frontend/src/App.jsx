@@ -30,9 +30,8 @@ function AppContent() {
     );
   }
 
-  // Once the check is complete, render the actual application.
+  // Once the check is complete, render the actual application routes.
   return (
-    <Router>
       <Layout>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -43,23 +42,25 @@ function AppContent() {
           <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
         </Routes>
       </Layout>
-    </Router>
   );
 }
 
-// The main App component wraps the providers around the new AppContent
+// ** THE FIX IS HERE **
+// The Router now wraps all providers, giving them access to the routing context.
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <NotificationProvider>
-          <AppContent />
-          <Toaster position="bottom-right" toastOptions={{
-            className: 'dark:bg-gray-700 dark:text-white',
-          }}/>
-        </NotificationProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <Router>
+        <ThemeProvider>
+          <AuthProvider>
+            <NotificationProvider>
+              <AppContent />
+              <Toaster position="bottom-right" toastOptions={{
+                className: 'dark:bg-gray-700 dark:text-white',
+              }}/>
+            </NotificationProvider>
+          </AuthProvider>
+        </ThemeProvider>
+    </Router>
   );
 }
 
