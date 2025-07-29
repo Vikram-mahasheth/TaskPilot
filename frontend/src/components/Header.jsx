@@ -55,7 +55,7 @@ const Header = () => {
             {/* ADD ONCLICK HANDLER TO THE LINK */}
             <Link to="/" onClick={handleLogoClick} className="flex-shrink-0 flex items-center gap-2 text-xl font-bold">
                   <img src="Screenshot 2025-07-28 at 10.43.16 AM.png" alt="Task Pilot Logo" className="h-8 w-8" />
-              <span>Project Phoenix</span>
+              <span>Task Pilot</span>
             </Link>
           </div>
           <div className="flex items-center space-x-2 md:space-x-4">
