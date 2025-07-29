@@ -12,7 +12,7 @@ export const NotificationProvider = ({ children }) => {
     const api = useApi();
 
     const fetchNotifications = useCallback(async () => {
-        if (!user || user.role !== 'admin') {
+        if (!user) {
             setNotifications([]);
             setUnreadCount(0);
             return;
@@ -30,10 +30,12 @@ export const NotificationProvider = ({ children }) => {
     }, [api, user]);
 
     useEffect(() => {
-        fetchNotifications();
-        const interval = setInterval(fetchNotifications, 60000); // 1 minute
-        return () => clearInterval(interval);
-    }, [fetchNotifications]);
+        if (user) {
+            fetchNotifications();
+            const interval = setInterval(fetchNotifications, 60000);
+            return () => clearInterval(interval);
+        }
+    }, [user, fetchNotifications]);
     
     const markAsRead = async (notificationId) => {
         try {

@@ -1,6 +1,6 @@
-// --- FILE: backend/models/Ticket.js ---
 import mongoose from 'mongoose';
 import Comment from './Comment.js';
+import Notification from './Notification.js';
 
 const historySchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -24,10 +24,12 @@ const ticketSchema = new mongoose.Schema({
     history: [historySchema],
 }, { timestamps: true });
 
+// Create text index for searching
 ticketSchema.index({ title: 'text', description: 'text' });
 
 ticketSchema.pre('deleteOne', { document: true, query: false }, async function (next) {
     await Comment.deleteMany({ ticket: this._id });
+    await Notification.deleteMany({ link: `/tickets/${this._id}` });
     next();
 });
 

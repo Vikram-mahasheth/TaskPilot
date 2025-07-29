@@ -9,9 +9,7 @@ export const notFound = (req, res, next) => {
 export const errorHandler = (err, req, res, next) => {
     const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
     res.status(statusCode);
-
     logger.error(`${statusCode} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
-    
     res.json({
         success: false,
         error: err.message,

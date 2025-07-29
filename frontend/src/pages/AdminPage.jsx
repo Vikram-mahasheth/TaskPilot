@@ -50,7 +50,7 @@ const AdminPage = () => {
         } catch (error) {
             toast.error(`Failed to delete user: ${error.message}`);
         } finally {
-            setUserToDelete(null); // Close modal
+            setUserToDelete(null);
         }
     };
 

@@ -9,9 +9,7 @@ router.get('/stats', protect, admin, async (req, res, next) => {
     try {
         const totalTickets = await Ticket.countDocuments();
         const totalUsers = await User.countDocuments();
-        const ticketsByStatus = await Ticket.aggregate([
-            { $group: { _id: '$status', count: { $sum: 1 } } }
-        ]);
+        const ticketsByStatus = await Ticket.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]);
         const recentTickets = await Ticket.find().sort({ createdAt: -1 }).limit(5).populate('createdBy', 'name');
         res.status(200).json({
             success: true,

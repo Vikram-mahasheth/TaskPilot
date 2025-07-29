@@ -10,24 +10,17 @@ const useApi = () => {
 
   const request = useCallback(async (endpoint, options = {}) => {
     const headers = { ...options.headers };
-
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-
     if (!(options.body instanceof FormData)) {
       headers['Content-Type'] = 'application/json';
     }
-
-    const config = {
-      ...options,
-      headers,
-    };
+    const config = { ...options, headers };
 
     try {
       const response = await fetch(`${baseURL}${endpoint}`, config);
       const data = await response.json();
-
       if (!response.ok) {
         if (response.status === 401) {
           logout();
@@ -43,7 +36,6 @@ const useApi = () => {
     }
   }, [token, logout, navigate, baseURL]);
   
-  // Memoize the returned object to prevent re-renders
   return useMemo(() => ({
       get: (endpoint, options) => request(endpoint, { ...options, method: 'GET' }),
       post: (endpoint, body, options) => request(endpoint, { ...options, method: 'POST', body: JSON.stringify(body) }),

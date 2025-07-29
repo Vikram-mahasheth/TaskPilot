@@ -32,12 +32,8 @@ const logger = winston.createLogger({
         }),
         fileRotateTransport,
     ],
-    exceptionHandlers: [
-        new winston.transports.File({ filename: 'logs/exceptions.log' }),
-    ],
-    rejectionHandlers: [
-        new winston.transports.File({ filename: 'logs/rejections.log' }),
-    ],
+    exceptionHandlers: [ new winston.transports.File({ filename: 'logs/exceptions.log' }) ],
+    rejectionHandlers: [ new winston.transports.File({ filename: 'logs/rejections.log' }) ],
 });
 
 export default logger;

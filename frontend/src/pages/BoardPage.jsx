@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, memo, useContext } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { useNavigate } from 'react-router-dom';
 import useApi from '../hooks/useApi';
+import { AuthContext } from '../context/AuthContext';
 import SkeletonLoader from '../components/SkeletonLoader';
-import { Plus } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const BoardPage = () => {
@@ -11,21 +12,39 @@ const BoardPage = () => {
     const [loading, setLoading] = useState(true);
     const [columns, setColumns] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [filters, setFilters] = useState({ search: '', status: '', priority: '', type: '', assignee: '' });
+    const [users, setUsers] = useState([]);
     
     const [newTicketData, setNewTicketData] = useState({
-        title: '',
-        description: '',
-        priority: 'Medium',
-        type: 'Task',
-        dueDate: ''
+        title: '', description: '', priority: 'Medium', type: 'Task', dueDate: ''
     });
 
     const api = useApi();
     const navigate = useNavigate();
+    const { user } = useContext(AuthContext);
+
+    const fetchUsers = useCallback(async () => {
+        if (user.role === 'admin') {
+            try {
+                const res = await api.get('/users');
+                if (res.success) {
+                    setUsers(res.data);
+                }
+            } catch (error) {
+                toast.error("Failed to fetch users for filtering.");
+            }
+        }
+    }, [api, user.role]);
 
     const fetchTickets = useCallback(async () => {
+        setLoading(true);
         try {
-            const res = await api.get('/tickets');
+            const queryParams = new URLSearchParams();
+            Object.entries(filters).forEach(([key, value]) => {
+                if (value) queryParams.append(key, value);
+            });
+            
+            const res = await api.get(`/tickets?${queryParams.toString()}`);
             if (res.success) {
                 const ticketsData = res.data;
                 const newTicketsMap = ticketsData.reduce((acc, ticket) => {
@@ -51,20 +70,24 @@ const BoardPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [api]);
+    }, [api, filters]);
 
     useEffect(() => {
-        fetchTickets();
-    }, [fetchTickets]);
+        const handler = setTimeout(() => {
+            fetchTickets();
+        }, 300);
+        return () => clearTimeout(handler);
+    }, [filters, fetchTickets]);
+
+    useEffect(() => {
+        fetchUsers();
+    }, [fetchUsers]);
 
     const onDragEnd = async (result) => {
         const { destination, source, draggableId } = result;
-        if (!destination || (destination.droppableId === source.droppableId && destination.index === source.index)) {
-            return;
-        }
+        if (!destination || (destination.droppableId === source.droppableId && destination.index === source.index)) return;
         
         const originalColumns = { ...columns };
-        
         const start = originalColumns[source.droppableId];
         const finish = originalColumns[destination.droppableId];
         
@@ -102,7 +125,7 @@ const BoardPage = () => {
                 setTicketsMap(prevMap => ({ ...prevMap, [newTicket._id]: newTicket }));
                 setColumns(prevColumns => {
                     const newCols = { ...prevColumns };
-                    newCols.Open.ticketIds.push(newTicket._id);
+                    newCols.Open.ticketIds.unshift(newTicket._id);
                     return newCols;
                 });
                 
@@ -118,21 +141,53 @@ const BoardPage = () => {
         const { name, value } = e.target;
         setNewTicketData(prev => ({ ...prev, [name]: value }));
     };
+    
+    const handleFilterChange = (e) => {
+        const { name, value } = e.target;
+        setFilters(prev => ({ ...prev, [name]: value }));
+    };
 
     if (loading || !columns) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <SkeletonLoader count={2} />
-                <SkeletonLoader count={3} />
-                <SkeletonLoader count={1} />
+            <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4 animate-pulse">
+                    <div className="h-10 bg-gray-300 dark:bg-gray-700 rounded-md w-full sm:w-64"></div>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                        <div className="h-10 bg-gray-300 dark:bg-gray-700 rounded-md w-full"></div>
+                        <div className="h-10 bg-gray-300 dark:bg-gray-700 rounded-md w-full"></div>
+                    </div>
+                    <div className="h-10 bg-gray-300 dark:bg-gray-700 rounded-md w-full sm:w-auto px-16"></div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <SkeletonLoader count={2} />
+                    <SkeletonLoader count={3} />
+                    <SkeletonLoader count={1} />
+                </div>
             </div>
         );
     }
 
     return (
         <>
-            <div className="flex justify-between items-center mb-4">
-                <h1 className="text-2xl font-bold">Ticket Board</h1>
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+                <div className="relative w-full sm:w-auto">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                    <input type="text" placeholder="Search tickets..." name="search" value={filters.search} onChange={handleFilterChange} className="pl-10 p-2 border rounded-md w-full sm:w-64 dark:bg-gray-700"/>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    <select name="status" value={filters.status} onChange={handleFilterChange} className="p-2 border rounded-md dark:bg-gray-700">
+                        <option value="">All Statuses</option><option>Open</option><option>In Progress</option><option>Resolved</option>
+                    </select>
+                     <select name="priority" value={filters.priority} onChange={handleFilterChange} className="p-2 border rounded-md dark:bg-gray-700">
+                        <option value="">All Priorities</option><option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
+                    </select>
+                    {user.role === 'admin' && (
+                        <select name="assignee" value={filters.assignee} onChange={handleFilterChange} className="p-2 border rounded-md dark:bg-gray-700">
+                            <option value="">All Assignees</option>
+                            {users.map(u => <option key={u._id} value={u._id}>{u.name}</option>)}
+                        </select>
+                    )}
+                </div>
                 <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
                     <Plus size={18} /> New Ticket
                 </button>

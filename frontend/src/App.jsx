@@ -17,11 +17,11 @@ import TicketDetailPage from './pages/TicketDetailPage';
 import DashboardPage from './pages/DashboardPage';
 import AdminPage from './pages/AdminPage';
 
-// This new component decides what to show based on the loading state
+// This component decides what to show based on the loading state
 function AppContent() {
   const { loading } = useContext(AuthContext);
 
-  // If the initial auth check is still running, show a full-page spinner.
+  // If the initial auth check is running, show a full-page spinner.
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
@@ -45,7 +45,6 @@ function AppContent() {
   );
 }
 
-// ** THE FIX IS HERE **
 // The Router now wraps all providers, giving them access to the routing context.
 function App() {
   return (

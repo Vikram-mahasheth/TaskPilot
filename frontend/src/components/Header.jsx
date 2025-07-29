@@ -1,6 +1,5 @@
 
-              
-            import { useContext, useState, useEffect, useRef } from 'react';
+             import { useContext, useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
@@ -49,6 +48,7 @@ const Header = () => {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center gap-2 text-xl font-bold">
+              
               <img src="Screenshot 2025-07-28 at 10.43.16 AM.png" alt="Task Pilot Logo" className="h-8 w-8" />
               <span>Task Pilot</span>
             </Link>
@@ -72,7 +72,7 @@ const Header = () => {
             
             {user ? (
               <>
-              {user.role === 'admin' && (
+                {/* Notification bell for ALL users */}
                 <div className="relative" ref={notificationRef}>
                     <button onClick={() => setIsNotificationsOpen(prev => !prev)} className="relative p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">
                         <Bell size={20} />
@@ -97,9 +97,9 @@ const Header = () => {
                         </div>
                     )}
                 </div>
-              )}
+              
               <div className="flex items-center space-x-2">
-                <span className="text-gray-800 dark:text-gray-200 hidden sm:block"><UserIcon size={16} className="inline-block mr-1" /> {user && user.name}</span>
+                <span className="text-gray-800 dark:text-gray-200 hidden sm:block"><UserIcon size={16} className="inline-block mr-1" /> {user.name}</span>
                 <button onClick={handleLogout} className="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"><LogOut size={20} /></button>
               </div>
               </>
