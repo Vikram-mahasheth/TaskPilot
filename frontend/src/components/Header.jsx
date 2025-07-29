@@ -46,7 +46,7 @@ const Header = () => {
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <Link to="/" className="flex-shrink-0 flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-white">
+            <Link to="/" className="flex-shrink-0 flex items-center gap-2 text-xl font-bold">
               <img src="Screenshot 2025-07-28 at 10.43.16 AM.png" alt="Project Phoenix Logo" className="h-8 w-8" />
               <span>Task Pilot</span>
             </Link>
@@ -81,13 +81,13 @@ const Header = () => {
                     {isNotificationsOpen && (
                         <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg overflow-hidden z-20 border dark:border-gray-700">
                             <div className="py-2 px-4 flex justify-between items-center border-b dark:border-gray-700">
-                                <h3 className="font-semibold text-gray-900 dark:text-white">Notifications</h3>
+                                <h3 className="font-semibold">Notifications</h3>
                                 {unreadCount > 0 && <button onClick={markAllAsRead} className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">Mark all as read</button>}
                             </div>
                             <ul className="divide-y divide-gray-200 dark:divide-gray-700 max-h-96 overflow-y-auto">
-                                {notifications && notifications.length > 0 ? notifications.map(n => (
+                                {notifications.length > 0 ? notifications.map(n => (
                                     <li key={n._id} onClick={() => handleNotificationClick(n)} className={`px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer ${!n.read ? 'bg-indigo-50 dark:bg-indigo-900/50' : ''}`}>
-                                        <p className="text-sm text-gray-800 dark:text-gray-200">{n.message}</p>
+                                        <p className="text-sm">{n.message}</p>
                                         <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(n.createdAt).toLocaleString()}</p>
                                     </li>
                                 )) : <li className="p-4 text-center text-sm text-gray-500">No new notifications</li>}
@@ -97,7 +97,6 @@ const Header = () => {
                 </div>
               )}
               <div className="flex items-center space-x-2">
-                {/* Safety check to prevent crash on initial render */}
                 <span className="text-gray-800 dark:text-gray-200 hidden sm:block"><UserIcon size={16} className="inline-block mr-1" /> {user && user.name}</span>
                 <button onClick={handleLogout} className="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"><LogOut size={20} /></button>
               </div>

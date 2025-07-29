@@ -1,3 +1,6 @@
+
+
+// --- FILE: frontend/src/context/NotificationContext.jsx ---
 import { createContext, useState, useEffect, useCallback, useContext } from 'react';
 import useApi from '../hooks/useApi';
 import { AuthContext } from './AuthContext';
@@ -12,7 +15,6 @@ export const NotificationProvider = ({ children }) => {
     const api = useApi();
 
     const fetchNotifications = useCallback(async () => {
-        // This check prevents a race condition on admin login
         if (!user || user.role !== 'admin') {
             setNotifications([]);
             setUnreadCount(0);
@@ -32,7 +34,7 @@ export const NotificationProvider = ({ children }) => {
 
     useEffect(() => {
         fetchNotifications();
-        const interval = setInterval(fetchNotifications, 60000); // Poll every minute
+        const interval = setInterval(fetchNotifications, 60000); // 1 minute
         return () => clearInterval(interval);
     }, [fetchNotifications]);
     

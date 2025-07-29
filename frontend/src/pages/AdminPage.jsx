@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, memo } from 'react';
 import useApi from '../hooks/useApi';
 import toast from 'react-hot-toast';
 import SkeletonLoader from '../components/SkeletonLoader';
-import { Shield, User, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 
 const AdminPage = () => {
@@ -54,10 +54,7 @@ const AdminPage = () => {
         }
     };
 
-
-    if (loading) {
-        return <SkeletonLoader count={5} />;
-    }
+    if (loading) return <SkeletonLoader count={5} />;
 
     return (
         <>
@@ -111,5 +108,4 @@ const AdminPage = () => {
     );
 };
 
-// Wrap component in memo to prevent re-renders
 export default memo(AdminPage);

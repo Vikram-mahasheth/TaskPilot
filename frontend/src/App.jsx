@@ -22,7 +22,6 @@ function AppContent() {
   const { loading } = useContext(AuthContext);
 
   // If the initial auth check is still running, show a full-page spinner.
-  // This is the definitive fix for the blank screen crash on startup.
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">

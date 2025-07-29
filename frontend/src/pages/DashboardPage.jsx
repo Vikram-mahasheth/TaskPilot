@@ -29,15 +29,20 @@ const DashboardPage = () => {
 
     if (loading || !stats) {
         return (
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <SkeletonLoader count={1} />
-                <SkeletonLoader count={1} />
-                <SkeletonLoader count={1} />
+             <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <SkeletonLoader count={1} />
+                    <SkeletonLoader count={1} />
+                    <SkeletonLoader count={1} />
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <SkeletonLoader count={1} />
+                    <SkeletonLoader count={1} />
+                </div>
             </div>
         );
     }
 
-    // Safety check: Provide a default empty array if ticketsByStatus is missing
     const chartData = (stats?.ticketsByStatus || []).map(item => ({
         name: item._id,
         tickets: item.count
@@ -46,13 +51,11 @@ const DashboardPage = () => {
     return (
         <div className="space-y-6">
             <h1 className="text-2xl font-bold">Dashboard</h1>
-            {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md flex items-center gap-4">
                     <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-full"><Ticket className="text-blue-500" /></div>
                     <div>
                         <p className="text-gray-500 dark:text-gray-400">Total Tickets</p>
-                        {/* Safety check: Provide a default value of 0 */}
                         <p className="text-2xl font-bold">{stats?.totalTickets || 0}</p>
                     </div>
                 </div>
@@ -60,7 +63,6 @@ const DashboardPage = () => {
                     <div className="bg-green-100 dark:bg-green-900 p-3 rounded-full"><Users className="text-green-500" /></div>
                     <div>
                         <p className="text-gray-500 dark:text-gray-400">Total Users</p>
-                        {/* Safety check: Provide a default value of 0 */}
                         <p className="text-2xl font-bold">{stats?.totalUsers || 0}</p>
                     </div>
                 </div>
@@ -73,7 +75,6 @@ const DashboardPage = () => {
                 </div>
             </div>
 
-            {/* Charts and Recent Activity */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
                     <h2 className="text-xl font-semibold mb-4">Tickets by Status</h2>
@@ -91,7 +92,6 @@ const DashboardPage = () => {
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
                     <h2 className="text-xl font-semibold mb-4">Recent Tickets</h2>
                     <ul className="space-y-3">
-                        {/* Safety check: Provide a default empty array if recentTickets is missing */}
                         {(stats?.recentTickets || []).map(ticket => (
                             <li key={ticket._id} className="flex justify-between items-center">
                                 <div>
@@ -108,5 +108,4 @@ const DashboardPage = () => {
     );
 };
 
-// Wrap component in memo to prevent re-renders
 export default memo(DashboardPage);

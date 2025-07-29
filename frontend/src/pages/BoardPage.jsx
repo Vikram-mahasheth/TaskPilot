@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, memo } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +7,7 @@ import { Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const BoardPage = () => {
-    const [tickets, setTickets] = useState([]);
+    const [ticketsMap, setTicketsMap] = useState({});
     const [loading, setLoading] = useState(true);
     const [columns, setColumns] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,13 +27,19 @@ const BoardPage = () => {
         try {
             const res = await api.get('/tickets');
             if (res.success) {
-                setTickets(res.data);
+                const ticketsData = res.data;
+                const newTicketsMap = ticketsData.reduce((acc, ticket) => {
+                    acc[ticket._id] = ticket;
+                    return acc;
+                }, {});
+                setTicketsMap(newTicketsMap);
+
                 const newColumns = {
                     'Open': { id: 'Open', title: 'To Do', ticketIds: [] },
                     'In Progress': { id: 'In Progress', title: 'In Progress', ticketIds: [] },
                     'Resolved': { id: 'Resolved', title: 'Done', ticketIds: [] },
                 };
-                res.data.forEach(ticket => {
+                ticketsData.forEach(ticket => {
                     if (newColumns[ticket.status]) {
                         newColumns[ticket.status].ticketIds.push(ticket._id);
                     }
@@ -71,33 +76,30 @@ const BoardPage = () => {
         finishTicketIds.splice(destination.index, 0, draggableId);
         const newFinish = { ...finish, ticketIds: finishTicketIds };
 
-        // Optimistic UI Update
         setColumns({ ...columns, [newStart.id]: newStart, [newFinish.id]: newFinish });
 
         try {
             await api.put(`/tickets/${draggableId}`, { status: finish.id });
             toast.success("Ticket status updated.");
         } catch (error) {
-            setColumns(originalColumns); // Revert UI on failure
+            setColumns(originalColumns);
             toast.error("Failed to update ticket status.");
         }
     };
 
     const handleCreateTicket = async (e) => {
         e.preventDefault();
-        if (!newTicketData.title) {
-            return toast.error("Title is required.");
-        }
+        if (!newTicketData.title) return toast.error("Title is required.");
+
         try {
             const payload = { ...newTicketData, dueDate: newTicketData.dueDate || null };
             const res = await api.post('/tickets', payload);
             
             if (res.success) {
                 toast.success("Ticket created!");
-                
-                // ** PERFORMANCE FIX: Update state locally instead of re-fetching **
                 const newTicket = res.data;
-                setTickets(prevTickets => [...prevTickets, newTicket]);
+                
+                setTicketsMap(prevMap => ({ ...prevMap, [newTicket._id]: newTicket }));
                 setColumns(prevColumns => {
                     const newCols = { ...prevColumns };
                     newCols.Open.ticketIds.push(newTicket._id);
@@ -148,7 +150,7 @@ const BoardPage = () => {
                                         className={`min-h-[200px] transition-colors duration-200 rounded-lg p-2 ${snapshot.isDraggingOver ? 'bg-indigo-100 dark:bg-indigo-900/50' : ''}`}
                                     >
                                         {column.ticketIds.map((ticketId, index) => {
-                                            const ticket = tickets.find(t => t._id === ticketId);
+                                            const ticket = ticketsMap[ticketId];
                                             if (!ticket) return null;
                                             return (
                                                 <Draggable key={ticket._id} draggableId={ticket._id} index={index}>
@@ -222,5 +224,4 @@ const BoardPage = () => {
     );
 };
 
-// Wrap component in memo to prevent re-renders
 export default memo(BoardPage);
