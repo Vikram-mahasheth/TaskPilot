@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, memo } from 'react';
 import useApi from '../hooks/useApi';
 import toast from 'react-hot-toast';
 import SkeletonLoader from '../components/SkeletonLoader';
-import { Trash2 } from 'lucide-react';
+import { Trash2, User, Mail, Shield } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 
 const AdminPage = () => {
@@ -50,7 +50,7 @@ const AdminPage = () => {
         } catch (error) {
             toast.error(`Failed to delete user: ${error.message}`);
         } finally {
-            setUserToDelete(null);
+            setUserToDelete(null); // Close modal
         }
     };
 
@@ -59,7 +59,9 @@ const AdminPage = () => {
     return (
         <>
             <h1 className="text-2xl font-bold mb-4">Admin Panel - User Management</h1>
-            <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+            
+            {/* Desktop Table View */}
+            <div className="hidden md:block bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-700">
                         <tr>
@@ -78,14 +80,14 @@ const AdminPage = () => {
                                     <select 
                                         value={user.role} 
                                         onChange={(e) => handleRoleChange(user._id, e.target.value)}
-                                        className="p-1 border rounded-md bg-transparent dark:bg-gray-800"
+                                        className="p-1 border rounded-md bg-transparent dark:bg-gray-800 dark:border-gray-600"
                                     >
                                         <option value="user">User</option>
                                         <option value="admin">Admin</option>
                                     </select>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                    <button onClick={() => setUserToDelete(user)} className="text-red-500 hover:text-red-700">
+                                    <button onClick={() => setUserToDelete(user)} className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50">
                                         <Trash2 size={20} />
                                     </button>
                                 </td>
@@ -93,6 +95,35 @@ const AdminPage = () => {
                         ))}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
+                {users.map(user => (
+                    <div key={user._id} className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <p className="font-bold text-lg flex items-center gap-2"><User size={16} /> {user.name}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2"><Mail size={14} /> {user.email}</p>
+                            </div>
+                            <button onClick={() => setUserToDelete(user)} className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50">
+                                <Trash2 size={20} />
+                            </button>
+                        </div>
+                        <div className="mt-4 pt-4 border-t dark:border-gray-700">
+                             <label htmlFor={`role-${user._id}`} className="text-sm font-medium text-gray-500 flex items-center gap-2"><Shield size={16} /> Role</label>
+                             <select 
+                                id={`role-${user._id}`}
+                                value={user.role} 
+                                onChange={(e) => handleRoleChange(user._id, e.target.value)}
+                                className="mt-1 w-full p-2 border rounded-md bg-transparent dark:bg-gray-700 dark:border-gray-600"
+                            >
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                ))}
             </div>
             
             {userToDelete && (
