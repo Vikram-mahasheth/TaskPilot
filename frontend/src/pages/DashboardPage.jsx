@@ -37,7 +37,8 @@ const DashboardPage = () => {
         );
     }
 
-    const chartData = stats.ticketsByStatus.map(item => ({
+    // Safety check: Provide a default empty array if ticketsByStatus is missing
+    const chartData = (stats?.ticketsByStatus || []).map(item => ({
         name: item._id,
         tickets: item.count
     }));
@@ -51,14 +52,16 @@ const DashboardPage = () => {
                     <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-full"><Ticket className="text-blue-500" /></div>
                     <div>
                         <p className="text-gray-500 dark:text-gray-400">Total Tickets</p>
-                        <p className="text-2xl font-bold">{stats.totalTickets}</p>
+                        {/* Safety check: Provide a default value of 0 */}
+                        <p className="text-2xl font-bold">{stats?.totalTickets || 0}</p>
                     </div>
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md flex items-center gap-4">
                     <div className="bg-green-100 dark:bg-green-900 p-3 rounded-full"><Users className="text-green-500" /></div>
                     <div>
                         <p className="text-gray-500 dark:text-gray-400">Total Users</p>
-                        <p className="text-2xl font-bold">{stats.totalUsers}</p>
+                        {/* Safety check: Provide a default value of 0 */}
+                        <p className="text-2xl font-bold">{stats?.totalUsers || 0}</p>
                     </div>
                 </div>
                  <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md flex items-center gap-4">
@@ -79,7 +82,7 @@ const DashboardPage = () => {
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
                             <XAxis dataKey="name" />
                             <YAxis allowDecimals={false}/>
-                            <Tooltip contentStyle={{ backgroundColor: '#333', border: 'none' }} />
+                            <Tooltip contentStyle={{ backgroundColor: 'rgb(55 65 81 / 1)', border: 'none', color: '#fff' }} itemStyle={{color: '#fff'}} />
                             <Legend />
                             <Bar dataKey="tickets" fill="#4f46e5" />
                         </BarChart>
@@ -88,11 +91,12 @@ const DashboardPage = () => {
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
                     <h2 className="text-xl font-semibold mb-4">Recent Tickets</h2>
                     <ul className="space-y-3">
-                        {stats.recentTickets.map(ticket => (
+                        {/* Safety check: Provide a default empty array if recentTickets is missing */}
+                        {(stats?.recentTickets || []).map(ticket => (
                             <li key={ticket._id} className="flex justify-between items-center">
                                 <div>
                                     <p className="font-medium">{ticket.title}</p>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Created by {ticket.createdBy.name}</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Created by {ticket.createdBy?.name || 'Unknown'}</p>
                                 </div>
                                 <span className={`px-2 py-1 text-xs rounded-full ${ticket.status === 'Open' ? 'bg-red-200 text-red-800' : ticket.status === 'In Progress' ? 'bg-yellow-200 text-yellow-800' : 'bg-green-200 text-green-800'}`}>{ticket.status}</span>
                             </li>
