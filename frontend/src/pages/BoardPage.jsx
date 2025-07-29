@@ -77,7 +77,7 @@ const BoardPage = () => {
     useEffect(() => {
         const handler = setTimeout(() => {
             fetchTickets();
-        }, 300);
+        }, 600);
         return () => clearTimeout(handler);
     }, [filters, fetchTickets]);
 
