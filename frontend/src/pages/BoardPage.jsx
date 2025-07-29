@@ -1,3 +1,5 @@
+// FILE: frontend/src/pages/BoardPage.jsx
+
 import { useState, useEffect, useCallback, memo, useContext } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { useNavigate } from 'react-router-dom';
@@ -209,13 +211,13 @@ const BoardPage = () => {
                                             if (!ticket) return null;
                                             return (
                                                 <Draggable key={ticket._id} draggableId={ticket._id} index={index}>
-                                                    {(provided) => (
+                                                    {(provided, snapshot) => (
                                                         <div
                                                             ref={provided.innerRef}
                                                             {...provided.draggableProps}
                                                             {...provided.dragHandleProps}
                                                             onClick={() => navigate(`/tickets/${ticket._id}`)}
-                                                            className="bg-white dark:bg-gray-700 p-4 mb-3 rounded-lg shadow cursor-pointer hover:shadow-lg"
+                                                            className={`bg-white dark:bg-gray-700 p-4 mb-3 rounded-lg shadow cursor-pointer hover:shadow-lg ${snapshot.isDragging ? 'shadow-xl ring-2 ring-indigo-500' : ''}`}
                                                         >
                                                             <h3 className="font-semibold">{ticket.title}</h3>
                                                             <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 flex justify-between">
