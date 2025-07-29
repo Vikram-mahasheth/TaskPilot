@@ -3,17 +3,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
 import { NotificationContext } from '../context/NotificationContext';
-import { FilterContext } from '../context/FilterContext'; // <-- IMPORT FILTER CONTEXT
-import { Sun, Moon, LogOut, LayoutDashboard, Shield, Ticket, User as UserIcon, Bell } from 'lucide-react';
+import { FilterContext } from '../context/FilterContext';
+import { Sun, Moon, LogOut, LayoutDashboard, Shield, Ticket, User as UserIcon, Bell, Menu, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Header = () => {
   const { user, logout } = useContext(AuthContext);
   const { theme, toggleTheme } = useContext(ThemeContext);
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useContext(NotificationContext);
-  const { resetFilters } = useContext(FilterContext); // <-- GET RESET FUNCTION
+  const { resetFilters } = useContext(FilterContext);
   const navigate = useNavigate();
 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationRef = useRef(null);
   
@@ -33,6 +34,7 @@ const Header = () => {
     logout();
     toast.success('Logged out successfully');
     navigate('/login');
+    setIsMobileMenuOpen(false);
   };
 
   const handleNotificationClick = (notification) => {
@@ -44,21 +46,27 @@ const Header = () => {
   };
   
   const handleLogoClick = () => {
-    resetFilters(); // <-- RESET FILTERS ON CLICK
+    resetFilters();
+    setIsMobileMenuOpen(false);
   };
 
+  const handleLinkClick = () => {
+    setIsMobileMenuOpen(false);
+  }
+
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-md">
+    <header className="bg-white dark:bg-gray-800 shadow-md relative z-10">
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            {/* ADD ONCLICK HANDLER TO THE LINK */}
             <Link to="/" onClick={handleLogoClick} className="flex-shrink-0 flex items-center gap-2 text-xl font-bold">
-                  <img src="Screenshot 2025-07-28 at 10.43.16 AM.png" alt="Task Pilot Logo" className="h-8 w-8" />
+              <img src="Screenshot 2025-07-28 at 10.43.16 AM.png" alt="Task Pilot Logo" className="h-8 w-8" />
               <span>Task Pilot</span>
             </Link>
           </div>
-          <div className="flex items-center space-x-2 md:space-x-4">
+
+          {/* Desktop Menu */}
+          <div className="hidden md:flex items-center space-x-4">
             {user && (
               <>
                 <Link to="/" onClick={handleLogoClick} className="text-gray-600 dark:text-gray-300 hover:text-indigo-500 dark:hover:text-indigo-400 flex items-center gap-1"><Ticket size={18}/> Board</Link>
@@ -111,7 +119,44 @@ const Header = () => {
               <Link to="/login" className="text-gray-600 dark:text-gray-300 hover:text-indigo-500 dark:hover:text-indigo-400">Login</Link>
             )}
           </div>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex items-center">
+             <button onClick={toggleTheme} className="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">
+              <ThemeIcon size={20} />
+            </button>
+            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-md text-gray-600 dark:text-gray-300">
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden pb-4">
+            <div className="flex flex-col space-y-2">
+              {user && (
+                <>
+                  <Link to="/" onClick={handleLogoClick} className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">Board</Link>
+                  {user.role === 'admin' && (
+                    <>
+                      <Link to="/dashboard" onClick={handleLinkClick} className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">Dashboard</Link>
+                      <Link to="/admin" onClick={handleLinkClick} className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">Admin</Link>
+                    </>
+                  )}
+                  <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+                  <div className="px-3 py-2 flex items-center justify-between">
+                    <span className="font-medium">{user.name}</span>
+                    <button onClick={handleLogout} className="text-gray-600 dark:text-gray-300 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"><LogOut size={20} /></button>
+                  </div>
+                </>
+              )}
+              {!user && (
+                  <Link to="/login" onClick={handleLinkClick} className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">Login</Link>
+              )}
+            </div>
+          </div>
+        )}
       </nav>
     </header>
   );
