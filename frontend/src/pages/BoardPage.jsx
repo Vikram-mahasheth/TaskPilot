@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, memo, useContext } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { useNavigate } from 'react-router-dom';
 import useApi from '../hooks/useApi';
-import { AuthContext } from '../context/AuthContext';
-import { FilterContext } from '../context/FilterContext'; // <-- IMPORT FILTER CONTEXT
+import { FilterContext } from '../context/FilterContext';
 import SkeletonLoader from '../components/SkeletonLoader';
 import { Plus, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -13,39 +12,26 @@ const BoardPage = () => {
     const [loading, setLoading] = useState(true);
     const [columns, setColumns] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const { filters, setFilters } = useContext(FilterContext); // <-- USE STATE FROM CONTEXT
-    const [users, setUsers] = useState([]);
     
+    const { filters, updateFilter } = useContext(FilterContext);
+
     const [newTicketData, setNewTicketData] = useState({
         title: '', description: '', priority: 'Medium', type: 'Task', dueDate: ''
     });
 
     const api = useApi();
     const navigate = useNavigate();
-    const { user } = useContext(AuthContext);
-
-    const fetchUsers = useCallback(async () => {
-        if (user.role === 'admin') {
-            try {
-                const res = await api.get('/users');
-                if (res.success) {
-                    setUsers(res.data);
-                }
-            } catch (error) {
-                toast.error("Failed to fetch users for filtering.");
-            }
-        }
-    }, [api, user.role]);
 
     const fetchTickets = useCallback(async () => {
         setLoading(true);
         try {
-            const queryParams = new URLSearchParams();
-            Object.entries(filters).forEach(([key, value]) => {
-                if (value) queryParams.append(key, value);
-            });
+            const params = new URLSearchParams({
+                search: filters.search,
+                status: filters.status,
+                priority: filters.priority
+            }).toString();
             
-            const res = await api.get(`/tickets?${queryParams.toString()}`);
+            const res = await api.get(`/tickets?${params}`);
             if (res.success) {
                 const ticketsData = res.data;
                 const newTicketsMap = ticketsData.reduce((acc, ticket) => {
@@ -76,34 +62,40 @@ const BoardPage = () => {
     useEffect(() => {
         const handler = setTimeout(() => {
             fetchTickets();
-        }, 600);
+        }, 300); // 300ms debounce
         return () => clearTimeout(handler);
     }, [filters, fetchTickets]);
 
-    useEffect(() => {
-        fetchUsers();
-    }, [fetchUsers]);
-
     const onDragEnd = async (result) => {
         const { destination, source, draggableId } = result;
-        if (!destination || (destination.droppableId === source.droppableId && destination.index === source.index)) return;
+        if (!destination || (destination.droppableId === source.droppableId && destination.index === source.index)) {
+            return;
+        }
         
         const originalColumns = { ...columns };
-        const start = originalColumns[source.droppableId];
-        const finish = originalColumns[destination.droppableId];
+        const startCol = originalColumns[source.droppableId];
+        const finishCol = originalColumns[destination.droppableId];
         
-        const startTicketIds = Array.from(start.ticketIds);
-        startTicketIds.splice(source.index, 1);
-        const newStart = { ...start, ticketIds: startTicketIds };
+        if (startCol === finishCol) {
+            const newTicketIds = Array.from(startCol.ticketIds);
+            newTicketIds.splice(source.index, 1);
+            newTicketIds.splice(destination.index, 0, draggableId);
+            const newCol = { ...startCol, ticketIds: newTicketIds };
+            setColumns({ ...columns, [newCol.id]: newCol });
+        } else {
+            const startTicketIds = Array.from(startCol.ticketIds);
+            startTicketIds.splice(source.index, 1);
+            const newStart = { ...startCol, ticketIds: startTicketIds };
+            
+            const finishTicketIds = Array.from(finishCol.ticketIds);
+            finishTicketIds.splice(destination.index, 0, draggableId);
+            const newFinish = { ...finishCol, ticketIds: finishTicketIds };
+
+            setColumns({ ...columns, [newStart.id]: newStart, [newFinish.id]: newFinish });
+        }
         
-        const finishTicketIds = Array.from(finish.ticketIds);
-        finishTicketIds.splice(destination.index, 0, draggableId);
-        const newFinish = { ...finish, ticketIds: finishTicketIds };
-
-        setColumns({ ...columns, [newStart.id]: newStart, [newFinish.id]: newFinish });
-
         try {
-            await api.put(`/tickets/${draggableId}`, { status: finish.id });
+            await api.put(`/tickets/${draggableId}`, { status: finishCol.id });
             toast.success("Ticket status updated.");
         } catch (error) {
             setColumns(originalColumns);
@@ -122,159 +114,89 @@ const BoardPage = () => {
             if (res.success) {
                 toast.success("Ticket created!");
                 const newTicket = res.data;
-                
                 setTicketsMap(prevMap => ({ ...prevMap, [newTicket._id]: newTicket }));
                 setColumns(prevColumns => {
                     const newCols = { ...prevColumns };
                     newCols.Open.ticketIds.unshift(newTicket._id);
                     return newCols;
                 });
-                
                 setIsModalOpen(false);
                 setNewTicketData({ title: '', description: '', priority: 'Medium', type: 'Task', dueDate: '' });
             }
-        } catch (error) {
-            toast.error(`Failed to create ticket: ${error.message}`);
-        }
+        } catch (error) { toast.error(`Failed to create ticket: ${error.message}`); }
     };
     
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setNewTicketData(prev => ({ ...prev, [name]: value }));
     };
-    
-    const handleFilterChange = (e) => {
-        const { name, value } = e.target;
-        setFilters(prev => ({ ...prev, [name]: value }));
-    };
-
-    if (loading || !columns) {
-        return (
-            <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4 animate-pulse">
-                    <div className="h-10 bg-gray-300 dark:bg-gray-700 rounded-md w-full sm:w-64"></div>
-                    <div className="flex gap-2 w-full sm:w-auto">
-                        <div className="h-10 bg-gray-300 dark:bg-gray-700 rounded-md w-full"></div>
-                        <div className="h-10 bg-gray-300 dark:bg-gray-700 rounded-md w-full"></div>
-                    </div>
-                    <div className="h-10 bg-gray-300 dark:bg-gray-700 rounded-md w-full sm:w-auto px-16"></div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <SkeletonLoader count={2} />
-                    <SkeletonLoader count={3} />
-                    <SkeletonLoader count={1} />
-                </div>
-            </div>
-        );
-    }
 
     return (
         <>
             <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
                 <div className="relative w-full sm:w-auto">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                    <input type="text" placeholder="Search tickets..." name="search" value={filters.search} onChange={handleFilterChange} className="pl-10 p-2 border rounded-md w-full sm:w-64 dark:bg-gray-700"/>
+                    <input type="text" placeholder="Search tickets..." value={filters.search} onChange={(e) => updateFilter('search', e.target.value)} className="w-full sm:w-64 pl-10 pr-4 py-2 border rounded-md dark:bg-gray-700" />
                 </div>
-                <div className="flex flex-wrap gap-2">
-                    <select name="status" value={filters.status} onChange={handleFilterChange} className="p-2 border rounded-md dark:bg-gray-700">
+                <div className="flex gap-2">
+                    <select value={filters.status} onChange={(e) => updateFilter('status', e.target.value)} className="p-2 border rounded-md dark:bg-gray-700">
                         <option value="">All Statuses</option><option>Open</option><option>In Progress</option><option>Resolved</option>
                     </select>
-                     <select name="priority" value={filters.priority} onChange={handleFilterChange} className="p-2 border rounded-md dark:bg-gray-700">
+                    <select value={filters.priority} onChange={(e) => updateFilter('priority', e.target.value)} className="p-2 border rounded-md dark:bg-gray-700">
                         <option value="">All Priorities</option><option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
                     </select>
-                    {user.role === 'admin' && (
-                        <select name="assignee" value={filters.assignee} onChange={handleFilterChange} className="p-2 border rounded-md dark:bg-gray-700">
-                            <option value="">All Assignees</option>
-                            {users.map(u => <option key={u._id} value={u._id}>{u.name}</option>)}
-                        </select>
-                    )}
                 </div>
-                <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+                <button onClick={() => navigate('/tickets/new')} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 w-full sm:w-auto justify-center">
                     <Plus size={18} /> New Ticket
                 </button>
             </div>
-            <DragDropContext onDragEnd={onDragEnd}>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                    {Object.values(columns).map(column => (
-                        <div key={column.id} className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
-                            <h2 className="font-bold text-lg mb-4 text-center">{column.title}</h2>
-                            <Droppable droppableId={column.id}>
-                                {(provided, snapshot) => (
-                                    <div
-                                        ref={provided.innerRef}
-                                        {...provided.droppableProps}
-                                        className={`min-h-[200px] transition-colors duration-200 rounded-lg p-2 ${snapshot.isDraggingOver ? 'bg-indigo-100 dark:bg-indigo-900/50' : ''}`}
-                                    >
-                                        {column.ticketIds.map((ticketId, index) => {
-                                            const ticket = ticketsMap[ticketId];
-                                            if (!ticket) return null;
-                                            return (
-                                                <Draggable key={ticket._id} draggableId={ticket._id} index={index}>
-                                                    {(provided, snapshot) => (
-                                                        <div
-                                                            ref={provided.innerRef}
-                                                            {...provided.draggableProps}
-                                                            {...provided.dragHandleProps}
-                                                            onClick={() => navigate(`/tickets/${ticket._id}`)}
-                                                            className={`bg-white dark:bg-gray-700 p-4 mb-3 rounded-lg shadow cursor-pointer hover:shadow-lg ${snapshot.isDragging ? 'shadow-xl ring-2 ring-indigo-500' : ''}`}
-                                                        >
-                                                            <h3 className="font-semibold">{ticket.title}</h3>
-                                                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 flex justify-between">
-                                                                <span>{ticket.type}</span>
-                                                                <span>{ticket.priority}</span>
+            
+            {loading ? (
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <SkeletonLoader count={2} />
+                    <SkeletonLoader count={3} />
+                    <SkeletonLoader count={1} />
+                </div>
+            ) : (
+                <DragDropContext onDragEnd={onDragEnd}>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        {Object.values(columns || {}).map(column => (
+                            <div key={column.id} className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
+                                <h2 className="font-bold text-lg mb-4 text-center">{column.title}</h2>
+                                <Droppable droppableId={column.id}>
+                                    {(provided, snapshot) => (
+                                        <div ref={provided.innerRef} {...provided.droppableProps} className={`min-h-[200px] transition-colors duration-200 rounded-lg p-2 ${snapshot.isDraggingOver ? 'bg-indigo-100 dark:bg-indigo-900/50' : ''}`}>
+                                            {column.ticketIds.map((ticketId, index) => {
+                                                const ticket = ticketsMap[ticketId];
+                                                if (!ticket) return null;
+                                                return (
+                                                    <Draggable key={ticket._id} draggableId={ticket._id} index={index}>
+                                                        {(provided, snapshot) => (
+                                                            <div
+                                                                ref={provided.innerRef}
+                                                                {...provided.draggableProps}
+                                                                {...provided.dragHandleProps}
+                                                                onClick={() => navigate(`/tickets/${ticket._id}`)}
+                                                                className={`bg-white dark:bg-gray-700 p-4 mb-3 rounded-lg shadow cursor-pointer hover:shadow-lg ${snapshot.isDragging ? 'shadow-xl scale-105' : ''}`}
+                                                            >
+                                                                <h3 className="font-semibold">{ticket.title}</h3>
+                                                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 flex justify-between">
+                                                                    <span>{ticket.type}</span>
+                                                                    <span>{ticket.priority}</span>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    )}
-                                                </Draggable>
-                                            );
-                                        })}
-                                        {provided.placeholder}
-                                    </div>
-                                )}
-                            </Droppable>
-                        </div>
-                    ))}
-                </div>
-            </DragDropContext>
-
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
-                        <h2 className="text-2xl font-bold mb-4">Create New Ticket</h2>
-                        <form onSubmit={handleCreateTicket} className="space-y-4">
-                            <div>
-                                <label htmlFor="title" className="block text-sm font-medium mb-1">Title</label>
-                                <input name="title" type="text" id="title" value={newTicketData.title} onChange={handleInputChange} className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" required />
+                                                        )}
+                                                    </Draggable>
+                                                );
+                                            })}
+                                            {provided.placeholder}
+                                        </div>
+                                    )}
+                                </Droppable>
                             </div>
-                            <div>
-                                <label htmlFor="description" className="block text-sm font-medium mb-1">Description</label>
-                                <textarea name="description" id="description" rows="4" value={newTicketData.description} onChange={handleInputChange} className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="priority" className="block text-sm font-medium mb-1">Priority</label>
-                                    <select name="priority" id="priority" value={newTicketData.priority} onChange={handleInputChange} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
-                                        <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label htmlFor="type" className="block text-sm font-medium mb-1">Type</label>
-                                    <select name="type" id="type" value={newTicketData.type} onChange={handleInputChange} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
-                                        <option>Task</option><option>Bug</option><option>Feature</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div>
-                                <label htmlFor="dueDate" className="block text-sm font-medium mb-1">Due Date</label>
-                                <input name="dueDate" id="dueDate" type="date" value={newTicketData.dueDate} onChange={handleInputChange} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
-                            </div>
-                            <div className="flex justify-end gap-4 pt-2">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-600">Cancel</button>
-                                <button type="submit" className="px-4 py-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Create Ticket</button>
-                            </div>
-                        </form>
+                        ))}
                     </div>
-                </div>
+                </DragDropContext>
             )}
         </>
     );

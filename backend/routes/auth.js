@@ -12,18 +12,19 @@ const generateToken = (id) => {
 router.post('/register', async (req, res, next) => {
     const { name, email, password } = req.body;
     try {
-        if (!name || !email || !password) {
-            return res.status(400).json({ success: false, error: 'Please provide all fields' });
-        }
         const userExists = await User.findOne({ email });
         if (userExists) {
             return res.status(400).json({ success: false, error: 'User already exists' });
         }
+        
         const isFirstAccount = (await User.countDocuments({})) === 0;
         const role = isFirstAccount ? 'admin' : 'user';
+
         const user = await User.create({ name, email, password, role });
+        
         const token = generateToken(user._id);
         logger.info(`New user registered: ${user.email} with role: ${user.role}`);
+
         res.status(201).json({
             success: true,
             token,

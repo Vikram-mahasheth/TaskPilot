@@ -15,8 +15,15 @@ router.get('/', protect, async (req, res, next) => {
 
 router.put('/:id/read', protect, async (req, res, next) => {
     try {
-        await Notification.findOneAndUpdate({ _id: req.params.id, user: req.user.id }, { read: true });
-        res.status(200).json({ success: true });
+        const notification = await Notification.findOneAndUpdate(
+            { _id: req.params.id, user: req.user.id },
+            { read: true },
+            { new: true }
+        );
+        if (!notification) {
+            return res.status(404).json({ success: false, error: 'Notification not found' });
+        }
+        res.status(200).json({ success: true, data: notification });
     } catch (error) {
         next(error);
     }
@@ -25,7 +32,7 @@ router.put('/:id/read', protect, async (req, res, next) => {
 router.post('/read-all', protect, async (req, res, next) => {
     try {
         await Notification.updateMany({ user: req.user.id, read: false }, { read: true });
-        res.status(200).json({ success: true });
+        res.status(200).json({ success: true, message: 'All notifications marked as read' });
     } catch (error) {
         next(error);
     }

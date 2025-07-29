@@ -30,14 +30,12 @@ export const NotificationProvider = ({ children }) => {
     }, [api, user]);
 
     useEffect(() => {
-        if (user) {
-            fetchNotifications();
-            const interval = setInterval(fetchNotifications, 60000);
-            return () => clearInterval(interval);
-        }
-    }, [user, fetchNotifications]);
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 60000); // Poll every minute
+        return () => clearInterval(interval);
+    }, [fetchNotifications]);
     
-    const markAsRead = async (notificationId) => {
+    const markAsRead = useCallback(async (notificationId) => {
         try {
             await api.put(`/notifications/${notificationId}/read`);
             setNotifications(prev => prev.map(n => n._id === notificationId ? {...n, read: true} : n));
@@ -45,9 +43,9 @@ export const NotificationProvider = ({ children }) => {
         } catch (error) {
             toast.error("Failed to mark notification as read.");
         }
-    };
+    }, [api]);
     
-    const markAllAsRead = async () => {
+    const markAllAsRead = useCallback(async () => {
         try {
             await api.post(`/notifications/read-all`);
             setNotifications(prev => prev.map(n => ({...n, read: true})));
@@ -55,7 +53,7 @@ export const NotificationProvider = ({ children }) => {
         } catch (error) {
             toast.error("Failed to mark all as read.");
         }
-    };
+    }, [api]);
 
     return (
         <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead, markAllAsRead }}>

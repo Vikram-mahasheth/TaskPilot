@@ -10,17 +10,24 @@ const useApi = () => {
 
   const request = useCallback(async (endpoint, options = {}) => {
     const headers = { ...options.headers };
+
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
+
     if (!(options.body instanceof FormData)) {
       headers['Content-Type'] = 'application/json';
     }
-    const config = { ...options, headers };
+
+    const config = {
+      ...options,
+      headers,
+    };
 
     try {
       const response = await fetch(`${baseURL}${endpoint}`, config);
       const data = await response.json();
+
       if (!response.ok) {
         if (response.status === 401) {
           logout();

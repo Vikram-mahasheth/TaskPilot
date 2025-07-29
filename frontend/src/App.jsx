@@ -3,7 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { NotificationProvider } from './context/NotificationContext';
-import { FilterProvider } from './context/FilterContext'; // <-- IMPORT NEW PROVIDER
+import { FilterProvider } from './context/FilterContext';
 import { useContext } from 'react';
 
 import PrivateRoute from './components/PrivateRoute';
@@ -20,6 +20,7 @@ import AdminPage from './pages/AdminPage';
 
 function AppContent() {
   const { loading } = useContext(AuthContext);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
@@ -27,6 +28,7 @@ function AppContent() {
       </div>
     );
   }
+
   return (
       <Layout>
         <Routes>
@@ -46,14 +48,14 @@ function App() {
     <Router>
         <ThemeProvider>
           <AuthProvider>
-            <NotificationProvider>
-              <FilterProvider> {/* <-- WRAP WITH FILTER PROVIDER */}
+            <FilterProvider>
+              <NotificationProvider>
                 <AppContent />
-              </FilterProvider>
-              <Toaster position="bottom-right" toastOptions={{
-                className: 'dark:bg-gray-700 dark:text-white',
-              }}/>
-            </NotificationProvider>
+                <Toaster position="bottom-right" toastOptions={{
+                  className: 'dark:bg-gray-700 dark:text-white',
+                }}/>
+              </NotificationProvider>
+            </FilterProvider>
           </AuthProvider>
         </ThemeProvider>
     </Router>

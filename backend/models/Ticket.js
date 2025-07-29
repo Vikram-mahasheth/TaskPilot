@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import Comment from './Comment.js';
-import Notification from './Notification.js';
 
 const historySchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -12,8 +11,8 @@ const historySchema = new mongoose.Schema({
 });
 
 const ticketSchema = new mongoose.Schema({
-    title: { type: String, required: true, trim: true },
-    description: { type: String, required: true },
+    title: { type: String, required: [true, 'Please add a title'], trim: true },
+    description: { type: String, required: [true, 'Please add a description'] },
     status: { type: String, enum: ['Open', 'In Progress', 'Resolved'], default: 'Open' },
     priority: { type: String, enum: ['Low', 'Medium', 'High', 'Critical'], default: 'Medium' },
     type: { type: String, enum: ['Bug', 'Feature', 'Task'], default: 'Task' },
@@ -24,12 +23,8 @@ const ticketSchema = new mongoose.Schema({
     history: [historySchema],
 }, { timestamps: true });
 
-// Create text index for searching
-ticketSchema.index({ title: 'text', description: 'text' });
-
 ticketSchema.pre('deleteOne', { document: true, query: false }, async function (next) {
     await Comment.deleteMany({ ticket: this._id });
-    await Notification.deleteMany({ link: `/tickets/${this._id}` });
     next();
 });
 

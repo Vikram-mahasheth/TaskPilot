@@ -6,6 +6,44 @@ import toast from 'react-hot-toast';
 import { Paperclip, Send, Trash2, User, Calendar, Tag, Info, ArrowLeft, Flag, Star } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 
+const NewTicketForm = () => {
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [priority, setPriority] = useState('Medium');
+    const [type, setType] = useState('Task');
+    const [dueDate, setDueDate] = useState('');
+    const api = useApi();
+    const navigate = useNavigate();
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await api.post('/tickets', { title, description, priority, type, dueDate: dueDate || null });
+            toast.success('Ticket created!');
+            navigate(`/tickets/${res.data._id}`);
+        } catch (error) {
+            toast.error(`Failed to create ticket: ${error.message}`);
+        }
+    };
+
+    return (
+        <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md">
+            <h1 className="text-2xl font-bold mb-6">Create New Ticket</h1>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div><label htmlFor="title" className="block text-sm font-medium mb-1">Title</label><input id="title" type="text" value={title} onChange={(e) => setTitle(e.target.value)} required className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700" /></div>
+                <div><label htmlFor="description" className="block text-sm font-medium mb-1">Description</label><textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} required rows="4" className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700" /></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label htmlFor="priority" className="block text-sm font-medium mb-1">Priority</label><select id="priority" value={priority} onChange={(e) => setPriority(e.target.value)} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700"><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select></div>
+                    <div><label htmlFor="type" className="block text-sm font-medium mb-1">Type</label><select id="type" value={type} onChange={(e) => setType(e.target.value)} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700"><option>Task</option><option>Bug</option><option>Feature</option></select></div>
+                </div>
+                <div><label htmlFor="dueDate" className="block text-sm font-medium mb-1">Due Date</label><input id="dueDate" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700" /></div>
+                <div className="flex justify-end gap-3 pt-4"><button type="button" onClick={() => navigate('/')} className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500">Cancel</button><button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Create</button></div>
+            </form>
+        </div>
+    );
+};
+
+
 const TicketDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -20,6 +58,7 @@ const TicketDetailPage = () => {
     const [formState, setFormState] = useState({ status: '', priority: '', type: '', assignee: '', dueDate: '' });
     
     const fetchTicketDetails = useCallback(async () => {
+        if (id === 'new') { setLoading(false); return; }
         try {
             const [ticketRes, commentsRes] = await Promise.all([
                 api.get(`/tickets/${id}`),
@@ -98,6 +137,7 @@ const TicketDetailPage = () => {
     };
 
     if (loading) return <div className="flex justify-center items-center h-64"><LoadingSpinner /></div>;
+    if (id === 'new') return <NewTicketForm />;
     if (!ticket) return <div className="text-center">Ticket not found. <Link to="/" className="text-indigo-500">Go back</Link></div>;
 
     return (

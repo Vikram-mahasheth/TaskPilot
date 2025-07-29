@@ -22,11 +22,13 @@ router.put('/:id/role', protect, admin, async (req, res, next) => {
     try {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+        
         user.role = role;
         await user.save();
-        const updatedUser = await User.findById(req.params.id).select('-password');
+        
         logger.info(`User role updated for ${user.email} to ${role} by ${req.user.email}`);
-        res.status(200).json({ success: true, data: updatedUser });
+        const userToReturn = await User.findById(user._id).select('-password');
+        res.status(200).json({ success: true, data: userToReturn });
     } catch (error) {
         next(error);
     }
@@ -36,7 +38,9 @@ router.delete('/:id', protect, admin, async (req, res, next) => {
     try {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+        
         await user.deleteOne();
+        
         logger.warn(`User deleted: ${user.email} by ${req.user.email}`);
         res.status(200).json({ success: true, message: 'User deleted successfully' });
     } catch (error) {
