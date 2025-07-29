@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { FilterProvider } from './context/FilterContext'; // <-- IMPORT NEW PROVIDER
 import { useContext } from 'react';
 
 import PrivateRoute from './components/PrivateRoute';
@@ -17,11 +18,8 @@ import TicketDetailPage from './pages/TicketDetailPage';
 import DashboardPage from './pages/DashboardPage';
 import AdminPage from './pages/AdminPage';
 
-// This component decides what to show based on the loading state
 function AppContent() {
   const { loading } = useContext(AuthContext);
-
-  // If the initial auth check is running, show a full-page spinner.
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
@@ -29,8 +27,6 @@ function AppContent() {
       </div>
     );
   }
-
-  // Once the check is complete, render the actual application routes.
   return (
       <Layout>
         <Routes>
@@ -45,14 +41,15 @@ function AppContent() {
   );
 }
 
-// The Router now wraps all providers, giving them access to the routing context.
 function App() {
   return (
     <Router>
         <ThemeProvider>
           <AuthProvider>
             <NotificationProvider>
-              <AppContent />
+              <FilterProvider> {/* <-- WRAP WITH FILTER PROVIDER */}
+                <AppContent />
+              </FilterProvider>
               <Toaster position="bottom-right" toastOptions={{
                 className: 'dark:bg-gray-700 dark:text-white',
               }}/>

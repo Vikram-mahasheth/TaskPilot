@@ -1,10 +1,9 @@
-// FILE: frontend/src/pages/BoardPage.jsx
-
 import { useState, useEffect, useCallback, memo, useContext } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { useNavigate } from 'react-router-dom';
 import useApi from '../hooks/useApi';
 import { AuthContext } from '../context/AuthContext';
+import { FilterContext } from '../context/FilterContext'; // <-- IMPORT FILTER CONTEXT
 import SkeletonLoader from '../components/SkeletonLoader';
 import { Plus, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -14,7 +13,7 @@ const BoardPage = () => {
     const [loading, setLoading] = useState(true);
     const [columns, setColumns] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [filters, setFilters] = useState({ search: '', status: '', priority: '', type: '', assignee: '' });
+    const { filters, setFilters } = useContext(FilterContext); // <-- USE STATE FROM CONTEXT
     const [users, setUsers] = useState([]);
     
     const [newTicketData, setNewTicketData] = useState({
